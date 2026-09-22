@@ -2,8 +2,8 @@ import { ArrowRight, Edit3, MessageSquareText, Trash2 } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import type { components } from "../api/generated";
-import { courseApi, evaluationApi } from "../api/services";
-import { EvaluationForm } from "../components/EvaluationForm";
+import { courseApi, evaluationApi, sourceDocumentApi } from "../api/services";
+import { EvaluationForm, type EvaluationFormPayload } from "../components/EvaluationForm";
 import { ApiErrorMessage, BackLink, ErrorState, LoadingState, PageHeader } from "../components/common";
 import { formatDate } from "../utils/format";
 
@@ -28,9 +28,17 @@ export function EvaluationDetailPage() {
   }, [evaluationId]);
   useEffect(() => { void load(); }, [load]);
 
-  async function update(payload: components["schemas"]["EvaluationCreate"]) {
+  async function update(payload: EvaluationFormPayload) {
     setSaving(true);
-    try { setEvaluation(await evaluationApi.update(evaluationId, payload)); setEditing(false); }
+    try {
+      const { sourceFile, ...evaluationPayload } = payload;
+      const sourceDocument = sourceFile ? await sourceDocumentApi.uploadFile(sourceFile) : null;
+      setEvaluation(await evaluationApi.update(evaluationId, {
+        ...evaluationPayload,
+        source_document_id: sourceDocument?.id ?? evaluationPayload.source_document_id ?? null,
+      }));
+      setEditing(false);
+    }
     finally { setSaving(false); }
   }
 
@@ -42,7 +50,7 @@ export function EvaluationDetailPage() {
 
   if (loading) return <LoadingState label="Cargando evaluación…" />;
   if (error || !evaluation || !course) return <div className="content-narrow"><BackLink to="/app" />{error ? <ErrorState message={<ApiErrorMessage error={error} />} onRetry={() => void load()} /> : <ErrorState message="No encontramos esta evaluación." />}</div>;
-  if (editing) return <div className="content-narrow content-narrow--form"><BackLink to={`/app/courses/${course.id}`}>Volver al curso</BackLink><PageHeader eyebrow="Editar evaluación" title={evaluation.name} description="Actualiza el contexto que se usará en las próximas respuestas." /><EvaluationForm course={course} initial={evaluation} loading={saving} submitLabel="Guardar cambios" onSubmit={update} onCancel={() => setEditing(false)} /></div>;
+  if (editing) return <div className="content-narrow content-narrow--form"><BackLink to={`/app/courses/${course.id}`}>Volver al curso</BackLink><PageHeader eyebrow="Editar evaluación" title={evaluation.name} description="Actualiza el PDF o el contexto que se usará en las próximas respuestas." /><EvaluationForm course={course} initial={evaluation} loading={saving} submitLabel="Guardar cambios" onSubmit={update} onCancel={() => setEditing(false)} /></div>;
   return (
     <div className="content-narrow">
       <BackLink to={`/app/courses/${course.id}`}>Volver al curso</BackLink>
@@ -62,6 +70,7 @@ export function EvaluationDetailPage() {
         <section className="detail-card"><p className="eyebrow">Niveles de logro</p><div className="chip-list">{evaluation.achievement_levels.map((level) => <span className="chip" key={level}>{level}</span>)}</div></section>
         <section className="detail-card"><p className="eyebrow">Objetivos</p><ul className="plain-list">{evaluation.learning_outcomes.map((outcome) => <li key={outcome.id}>{outcome.description}</li>)}</ul></section>
         <section className="detail-card"><p className="eyebrow">Contenidos</p><ul className="plain-list">{evaluation.contents.map((content) => <li key={content.id}><strong>{content.title}</strong>{content.description && <span>{content.description}</span>}</li>)}</ul></section>
+        {evaluation.source_document && <section className="detail-card"><p className="eyebrow">Documento de evaluación</p><p><strong>{evaluation.source_document.original_filename}</strong></p><p className="muted">La IA analizará este PDF al generar y refinar la rúbrica desde el chat.</p></section>}
         {evaluation.task_context && <section className="detail-card"><p className="eyebrow">Contexto de la tarea</p><p>{evaluation.task_context}</p></section>}
         {evaluation.additional_criteria && <section className="detail-card"><p className="eyebrow">Criterios adicionales</p><p>{evaluation.additional_criteria}</p></section>}
       </div>

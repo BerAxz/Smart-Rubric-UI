@@ -31,9 +31,12 @@ build independiente también funcione; `npm run generate:api` lo actualiza desde
 - Dashboard, listado global de evaluaciones y cuenta.
 - Creación de cursos desde PDF o texto, edición de objetivos/contenidos, renombrado y archivado.
 - Los PDFs se suben directamente a la URL prefirmada que entrega FastAPI; si el proveedor local no permite CORS, el cliente usa el fallback multipart autenticado. El navegador nunca recibe credenciales S3/R2/MinIO.
-- Creación y edición de evaluaciones con niveles de logro, objetivos, contenidos, contexto y criterios adicionales.
+- Creación y edición de evaluaciones con niveles de logro, objetivos y contenidos; puedes subir el
+  PDF de una evaluación existente para que la IA lo analice o escribir un contexto como
+  “quiero una presentación sobre…”.
 - Chat persistido por evaluación conectado a la respuesta estructurada del backend.
-- Exportación local de la rúbrica resultante a Markdown, PDF y Excel.
+- La rúbrica se visualiza como un mensaje dentro del chat, sin panel de resultado separado, y se
+  exporta desde esa misma conversación a Markdown, PDF y Excel.
 
 El cliente API centralizado (`src/api/client.ts`) agrega el bearer token, intenta una única renovación ante `401`, interpreta el contrato de error `{ error: { code, message, details } }` y limpia las credenciales cuando la sesión deja de ser válida.
 
@@ -90,3 +93,10 @@ src/
 ```
 
 La API real sigue siendo la autoridad de permisos. El frontend no intenta inferir acceso: ante una respuesta `401/403/404` muestra el error y permite volver a intentar o regresar al espacio de trabajo.
+
+## Flujo de agentes y ramas
+
+El contexto para agentes está en [`AGENTS.md`](AGENTS.md) y [`.agents/`](.agents/). Ejecuta
+`scripts/setup-hooks.sh` después de clonar; los hooks bloquean commits y pushes directos a
+`main`, `develop` y `dev`. El remoto usa `dev` como rama base y `scripts/start-feature.sh`
+crea ramas de trabajo desde allí.
