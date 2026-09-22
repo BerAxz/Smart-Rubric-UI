@@ -464,6 +464,8 @@ export interface components {
             course_name: string;
             /** Evaluation Name */
             evaluation_name: string;
+            /** Source Document Name */
+            source_document_name: string | null;
             /** Messages */
             messages: components["schemas"]["ChatMessageRead"][];
         };
@@ -669,6 +671,11 @@ export interface components {
             task_context?: string | null;
             /** Additional Criteria */
             additional_criteria?: string | null;
+            /**
+             * Source Document Id
+             * @description A completed PDF containing the evaluation to analyze.
+             */
+            source_document_id?: string | null;
         };
         /** EvaluationListResponse */
         EvaluationListResponse: {
@@ -711,6 +718,7 @@ export interface components {
             additional_criteria: string | null;
             /** Ai Provider */
             ai_provider: string | null;
+            source_document: components["schemas"]["SourceDocumentRead"] | null;
             /**
              * Created At
              * Format: date-time
@@ -740,6 +748,11 @@ export interface components {
             task_context?: string | null;
             /** Additional Criteria */
             additional_criteria?: string | null;
+            /**
+             * Source Document Id
+             * @description A completed PDF containing the evaluation to analyze.
+             */
+            source_document_id?: string | null;
         };
         /** HealthResponse */
         HealthResponse: {
@@ -920,6 +933,8 @@ export interface components {
             id: string;
             /** Course Id */
             course_id: string | null;
+            /** Evaluation Id */
+            evaluation_id: string | null;
             /** Provider */
             provider: string;
             /** Original Filename */

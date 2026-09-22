@@ -42,22 +42,7 @@ export function CourseCreatePage() {
     try {
       let course;
       if (file) {
-        const checksum = await sourceDocumentApi.checksum(file);
-        const intent = await sourceDocumentApi.createUploadIntent({
-          original_filename: file.name,
-          size_bytes: file.size,
-          sha256: checksum,
-        });
-        try {
-          await sourceDocumentApi.upload(intent.upload_url, intent.upload_headers ?? {}, file);
-        } catch (uploadError) {
-          if (uploadError instanceof Error && uploadError.message === "direct-upload-failed") {
-            await sourceDocumentApi.uploadViaApi(intent.document.id, file);
-          } else {
-            throw uploadError;
-          }
-        }
-        const document = await sourceDocumentApi.complete(intent.document.id, { sha256: checksum });
+        const document = await sourceDocumentApi.uploadFile(file);
         course = await courseApi.create({ name: cleanName, source_document_id: document.id });
       } else {
         course = await courseApi.create({ name: cleanName, source_text: cleanText });

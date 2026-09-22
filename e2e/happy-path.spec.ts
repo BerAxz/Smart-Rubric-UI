@@ -28,6 +28,8 @@ test("registers, creates a course and generates a rubric through the real API", 
 
     await page.getByRole("link", { name: /Nueva evaluación/ }).first().click();
     await page.getByLabel("Nombre de la evaluación").fill("Ensayo argumentativo");
+    await page.getByRole("radio", { name: /Escribir un contexto/ }).check();
+    await page.getByLabel("Contexto de la actividad").fill("Quiero evaluar un ensayo argumentativo con evidencia y una conclusión clara.");
     await page.getByRole("checkbox").first().check();
     await page.getByRole("checkbox").nth(1).check();
     await page.getByRole("button", { name: "Crear evaluación" }).click();
