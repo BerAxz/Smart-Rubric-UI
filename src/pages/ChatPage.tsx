@@ -16,7 +16,7 @@ import {
 
 type Message = components["schemas"]["ChatMessageRead"];
 
-const firstPrompt = "Genera una primera versión de la rúbrica y considera toda la información disponible en esta evaluación.";
+const firstPrompt = "Analiza la consigna, el contexto y el PDF si existe. Genera una primera versión en español con criterios observables del desempeño; usa los objetivos solo como guía de alineación, no como criterios literales.";
 
 function RubricInChat({
   rubric,
