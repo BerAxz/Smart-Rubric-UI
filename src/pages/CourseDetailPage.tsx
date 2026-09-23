@@ -111,6 +111,36 @@ export function CourseDetailPage() {
 }
 
 function StructureView({ course }: { course: Course }) {
+  if (course.units.length) {
+    return (
+      <div className="structure-grid">
+        {course.units.map((unit) => {
+          const unitOutcomes = course.learning_outcomes.filter((item) => item.unit_id === unit.id);
+          const unitContents = course.contents.filter((item) => item.unit_id === unit.id);
+          return (
+            <article className="structure-panel" key={unit.id}>
+              <h3>{unit.title}</h3>
+              {unit.description ? <p className="muted">{unit.description}</p> : null}
+              <p className="eyebrow">Objetivos ({unitOutcomes.length})</p>
+              {unitOutcomes.length ? (
+                <ol className="numbered-list">
+                  {unitOutcomes.map((outcome) => <li key={outcome.id}>{outcome.description}</li>)}
+                </ol>
+              ) : <p className="muted">No hay objetivos guardados.</p>}
+              <p className="eyebrow">Contenidos ({unitContents.length})</p>
+              {unitContents.length ? (
+                <ol className="numbered-list">
+                  {unitContents.map((content) => (
+                    <li key={content.id}><strong>{content.title}</strong>{content.description && <span>{content.description}</span>}</li>
+                  ))}
+                </ol>
+              ) : <p className="muted">No hay contenidos guardados.</p>}
+            </article>
+          );
+        })}
+      </div>
+    );
+  }
   return <div className="structure-grid"><div className="structure-panel"><h3>Objetivos de aprendizaje <span>{course.learning_outcomes.length}</span></h3>{course.learning_outcomes.length ? <ol className="numbered-list">{course.learning_outcomes.map((outcome) => <li key={outcome.id}>{outcome.description}</li>)}</ol> : <p className="muted">No hay objetivos guardados.</p>}</div><div className="structure-panel"><h3>Contenidos <span>{course.contents.length}</span></h3>{course.contents.length ? <ol className="numbered-list">{course.contents.map((content) => <li key={content.id}><strong>{content.title}</strong>{content.description && <span>{content.description}</span>}</li>)}</ol> : <p className="muted">No hay contenidos guardados.</p>}</div></div>;
 }
 

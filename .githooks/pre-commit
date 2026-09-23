@@ -1,0 +1,16 @@
+#!/bin/sh
+set -eu
+
+branch=$(git symbolic-ref --quiet --short HEAD || true)
+case "$branch" in
+  main|master|develop|dev)
+    echo "Commit rechazado: trabaja en una rama de cambio, no en $branch." >&2
+    exit 1
+    ;;
+  "")
+    echo "Commit rechazado: HEAD no apunta a una rama." >&2
+    exit 1
+    ;;
+esac
+
+git diff --check
