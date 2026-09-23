@@ -466,6 +466,8 @@ export interface components {
             evaluation_name: string;
             /** Source Document Name */
             source_document_name: string | null;
+            /** Unit Name */
+            unit_name?: string | null;
             /** Messages */
             messages: components["schemas"]["ChatMessageRead"][];
         };
@@ -508,6 +510,8 @@ export interface components {
         ContentInput: {
             /** Id */
             id?: string | null;
+            /** Unit Id */
+            unit_id?: string | null;
             /**
              * Title
              * @example Argumentación y evidencia
@@ -523,6 +527,8 @@ export interface components {
              * Format: uuid
              */
             id: string;
+            /** Unit Id */
+            unit_id: string | null;
             /** Position */
             position: number;
             /** Title */
@@ -578,6 +584,8 @@ export interface components {
              * Format: date-time
              */
             updated_at: string;
+            /** Units */
+            units: components["schemas"]["CourseUnitRead"][];
             /** Learning Outcomes */
             learning_outcomes: components["schemas"]["LearningOutcomeRead"][];
             /** Contents */
@@ -594,6 +602,8 @@ export interface components {
         };
         /** CourseStructureUpdate */
         CourseStructureUpdate: {
+            /** Units */
+            units?: components["schemas"]["CourseUnitInput"][] | null;
             /** Learning Outcomes */
             learning_outcomes?: components["schemas"]["LearningOutcomeInput"][];
             /** Contents */
@@ -602,6 +612,32 @@ export interface components {
             context?: {
                 [key: string]: unknown;
             } | null;
+        };
+        /** CourseUnitInput */
+        CourseUnitInput: {
+            /** Id */
+            id?: string | null;
+            /**
+             * Title
+             * @example Unidad 1: Argumentación
+             */
+            title: string;
+            /** Description */
+            description?: string | null;
+        };
+        /** CourseUnitRead */
+        CourseUnitRead: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Position */
+            position: number;
+            /** Title */
+            title: string;
+            /** Description */
+            description: string | null;
         };
         /** ErrorBody */
         ErrorBody: {
@@ -653,6 +689,11 @@ export interface components {
              *     ]
              */
             achievement_levels: string[];
+            /**
+             * Unit Id
+             * @description The course unit that defines the scope of this evaluation.
+             */
+            unit_id?: string | null;
             /**
              * Learning Outcome Ids
              * @example [
@@ -708,6 +749,7 @@ export interface components {
              * Format: uuid
              */
             course_id: string;
+            unit: components["schemas"]["CourseUnitRead"] | null;
             /** Name */
             name: string;
             /** Achievement Levels */
@@ -740,6 +782,11 @@ export interface components {
             name?: string | null;
             /** Achievement Levels */
             achievement_levels?: string[] | null;
+            /**
+             * Unit Id
+             * @description The course unit that defines the scope of this evaluation.
+             */
+            unit_id?: string | null;
             /** Learning Outcome Ids */
             learning_outcome_ids?: string[] | null;
             /** Content Ids */
@@ -776,6 +823,8 @@ export interface components {
         LearningOutcomeInput: {
             /** Id */
             id?: string | null;
+            /** Unit Id */
+            unit_id?: string | null;
             /**
              * Description
              * @example Analizar textos argumentativos.
@@ -789,6 +838,8 @@ export interface components {
              * Format: uuid
              */
             id: string;
+            /** Unit Id */
+            unit_id: string | null;
             /** Position */
             position: number;
             /** Description */

@@ -31,15 +31,31 @@ export function EvaluationForm({
   onSubmit: (payload: EvaluationFormPayload) => Promise<void>;
   onCancel: () => void;
 }) {
+  const defaultUnitId = initial?.unit?.id ?? course.units[0]?.id ?? "";
+  const initialUnitOutcomes = course.learning_outcomes.filter(
+    (item) => !course.units.length || item.unit_id === defaultUnitId,
+  );
+  const initialUnitContents = course.contents.filter(
+    (item) => !course.units.length || item.unit_id === defaultUnitId,
+  );
+  const initialOutcomeIds = initial?.learning_outcomes
+    .map((item) => item.id)
+    .filter((id) => initialUnitOutcomes.some((item) => item.id === id));
+  const initialContentIds = initial?.contents
+    .map((item) => item.id)
+    .filter((id) => initialUnitContents.some((item) => item.id === id));
   const [name, setName] = useState(initial?.name ?? "");
   const [levels, setLevels] = useState<string[]>(initial?.achievement_levels ?? defaultLevels);
+  const [selectedUnitId, setSelectedUnitId] = useState(defaultUnitId);
   const [selectedOutcomes, setSelectedOutcomes] = useState<string[]>(
-    initial?.learning_outcomes.map((item) => item.id) ?? [],
+    initialOutcomeIds?.length ? initialOutcomeIds : initialUnitOutcomes.map((item) => item.id),
   );
   const [selectedContents, setSelectedContents] = useState<string[]>(
-    initial?.contents.map((item) => item.id) ?? [],
+    initialContentIds?.length ? initialContentIds : initialUnitContents.map((item) => item.id),
   );
-  const [sourceMode, setSourceMode] = useState<"pdf" | "context">("pdf");
+  const [sourceMode, setSourceMode] = useState<"pdf" | "context">(
+    initial ? (initial.source_document ? "pdf" : "context") : "pdf",
+  );
   const [sourceFile, setSourceFile] = useState<File | null>(null);
   const [sourceDocumentId] = useState<string | null>(initial?.source_document?.id ?? null);
   const [taskContext, setTaskContext] = useState(initial?.task_context ?? "");
@@ -48,8 +64,32 @@ export function EvaluationForm({
   const [error, setError] = useState<unknown>(null);
   const [submitted, setSubmitted] = useState(false);
 
+  const selectedUnit = course.units.find((unit) => unit.id === selectedUnitId) ?? null;
+  const scopedOutcomes = course.units.length
+    ? course.learning_outcomes.filter((item) => item.unit_id === selectedUnitId)
+    : course.learning_outcomes;
+  const scopedContents = course.units.length
+    ? course.contents.filter((item) => item.unit_id === selectedUnitId)
+    : course.contents;
+
   function toggle(values: string[], value: string, update: (next: string[]) => void) {
     update(values.includes(value) ? values.filter((item) => item !== value) : [...values, value]);
+  }
+
+  function selectUnit(nextUnitId: string) {
+    setSelectedUnitId(nextUnitId);
+    setSelectedOutcomes(
+      course.units.length
+        ? course.learning_outcomes
+            .filter((item) => item.unit_id === nextUnitId)
+            .map((item) => item.id)
+        : selectedOutcomes,
+    );
+    setSelectedContents(
+      course.units.length
+        ? course.contents.filter((item) => item.unit_id === nextUnitId).map((item) => item.id)
+        : selectedContents,
+    );
   }
 
   function handleFile(event: ChangeEvent<HTMLInputElement>) {
@@ -91,6 +131,10 @@ export function EvaluationForm({
       setError(new Error("Los niveles deben tener nombres distintos."));
       return;
     }
+    if (course.units.length && !selectedUnitId) {
+      setError(new Error("Selecciona la unidad que delimitará la evaluación."));
+      return;
+    }
     if (!selectedOutcomes.length) {
       setError(new Error("Selecciona al menos un objetivo de aprendizaje."));
       return;
@@ -111,6 +155,7 @@ export function EvaluationForm({
       await onSubmit({
         name: name.trim(),
         achievement_levels: cleanLevels,
+        unit_id: selectedUnitId || null,
         learning_outcome_ids: selectedOutcomes,
         content_ids: selectedContents,
         task_context: sourceMode === "context" ? cleanContext : null,
@@ -224,6 +269,34 @@ export function EvaluationForm({
       </fieldset>
 
       <fieldset className="selection-fieldset">
+        <legend>Unidad que se evaluará</legend>
+        <p className="fieldset-help">
+          La IA analizará la unidad completa —su texto, objetivos y contenidos— y la usará como
+          alcance principal de la rúbrica.
+        </p>
+        {course.units.length ? (
+          <label className="field">
+            <span>Unidad del curso</span>
+            <select
+              value={selectedUnitId}
+              onChange={(event) => selectUnit(event.target.value)}
+              aria-label="Unidad del curso"
+            >
+              {course.units.map((unit) => (
+                <option value={unit.id} key={unit.id}>
+                  {unit.title}
+                </option>
+              ))}
+            </select>
+            {selectedUnit?.description ? <small>{selectedUnit.description}</small> : null}
+          </label>
+        ) : (
+          <p className="muted">Este curso no tiene unidades identificadas; se usará todo su contenido.</p>
+        )}
+        <FieldError message={submitted && course.units.length > 0 && !selectedUnitId ? "Selecciona una unidad." : undefined} />
+      </fieldset>
+
+      <fieldset className="selection-fieldset">
         <legend>Niveles de logro</legend>
         <p className="fieldset-help">Define entre 2 y 5 niveles que aparecerán en la rúbrica.</p>
         <div className="level-list">
@@ -264,10 +337,13 @@ export function EvaluationForm({
       </fieldset>
 
       <fieldset className="selection-fieldset">
-        <legend>Objetivos de aprendizaje</legend>
-        <p className="fieldset-help">Selecciona los objetivos que esta evaluación observará.</p>
+        <legend>Objetivos de aprendizaje de la unidad</legend>
+        <p className="fieldset-help">
+          Selecciona el foco de la evaluación. Los objetivos orientan los criterios; no se copian
+          como criterios literales.
+        </p>
         <div className="check-list">
-          {course.learning_outcomes.map((outcome) => (
+          {scopedOutcomes.map((outcome) => (
             <label
               className={`check-option ${selectedOutcomes.includes(outcome.id) ? "check-option--selected" : ""}`}
               key={outcome.id}
@@ -282,17 +358,17 @@ export function EvaluationForm({
             </label>
           ))}
         </div>
-        {course.learning_outcomes.length === 0 ? (
+        {scopedOutcomes.length === 0 ? (
           <p className="muted">Este curso no tiene objetivos. Vuelve al curso para agregar alguno.</p>
         ) : null}
         <FieldError message={submitted && !selectedOutcomes.length ? "Selecciona al menos un objetivo." : undefined} />
       </fieldset>
 
       <fieldset className="selection-fieldset">
-        <legend>Contenidos</legend>
+        <legend>Contenidos de la unidad</legend>
         <p className="fieldset-help">Relaciona los contenidos que formarán parte de la tarea.</p>
         <div className="check-list">
-          {course.contents.map((content) => (
+          {scopedContents.map((content) => (
             <label
               className={`check-option ${selectedContents.includes(content.id) ? "check-option--selected" : ""}`}
               key={content.id}
@@ -310,7 +386,7 @@ export function EvaluationForm({
             </label>
           ))}
         </div>
-        {course.contents.length === 0 ? (
+        {scopedContents.length === 0 ? (
           <p className="muted">Este curso no tiene contenidos. Vuelve al curso para agregar alguno.</p>
         ) : null}
         <FieldError message={submitted && !selectedContents.length ? "Selecciona al menos un contenido." : undefined} />

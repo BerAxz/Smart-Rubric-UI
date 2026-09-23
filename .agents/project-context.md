@@ -6,7 +6,8 @@
 - `src/api/client.ts` centraliza bearer token, refresh y errores; `src/api/services.ts` contiene
   las operaciones por dominio.
 - `src/api/generated.ts` se genera desde el OpenAPI del repositorio API vecino.
-- La creación de evaluación vive en `EvaluationForm`; admite una fuente PDF o contexto escrito.
+- La creación de evaluación vive en `EvaluationForm`; admite una fuente PDF o contexto escrito y
+  exige seleccionar la unidad que delimita el análisis de la IA.
 - `ChatPage` es deliberadamente una sola conversación: la rúbrica estructurada aparece como una
   tarjeta de un mensaje del asistente, y sus exportaciones parten de esa tarjeta.
 - `src/utils/rubric.ts` exporta Markdown, PDF y Excel en el navegador.
@@ -20,6 +21,10 @@
 - Una respuesta de chat puede incluir `structured_payload`; `isRubricPayload` decide si se muestra
   como rúbrica visual o como Markdown normal.
 - Si cambia el backend, ejecuta `npm run generate:api` antes de tocar componentes.
+
+La respuesta de chat se genera con la unidad completa, no solo con los objetivos marcados. El
+usuario puede pedir en el mismo chat que se cambie, elimine o agregue un criterio; la interfaz
+visualiza y exporta la versión completa devuelta por cada turno.
 
 ## Puntos de extensión
 

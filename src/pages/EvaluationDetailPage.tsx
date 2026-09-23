@@ -67,6 +67,7 @@ export function EvaluationDetailPage() {
         }
       />
       <div className="detail-grid">
+        {evaluation.unit && <section className="detail-card"><p className="eyebrow">Unidad analizada</p><h2>{evaluation.unit.title}</h2>{evaluation.unit.description && <p>{evaluation.unit.description}</p>}<p className="muted">La IA usa el contenido completo de esta unidad para construir y revisar la rúbrica.</p></section>}
         <section className="detail-card"><p className="eyebrow">Niveles de logro</p><div className="chip-list">{evaluation.achievement_levels.map((level) => <span className="chip" key={level}>{level}</span>)}</div></section>
         <section className="detail-card"><p className="eyebrow">Objetivos</p><ul className="plain-list">{evaluation.learning_outcomes.map((outcome) => <li key={outcome.id}>{outcome.description}</li>)}</ul></section>
         <section className="detail-card"><p className="eyebrow">Contenidos</p><ul className="plain-list">{evaluation.contents.map((content) => <li key={content.id}><strong>{content.title}</strong>{content.description && <span>{content.description}</span>}</li>)}</ul></section>

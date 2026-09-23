@@ -20,7 +20,9 @@ test("registers, creates a course and generates a rubric through the real API", 
 
     await page.getByRole("main").getByRole("link", { name: "Nuevo curso" }).click();
     await page.getByLabel("Nombre del curso").fill("Lenguaje 8° básico");
-    await page.getByLabel("Texto del curso").fill("Objetivo: Analizar textos argumentativos.\nContenido: Argumentación y evidencia.");
+    await page.getByLabel("Texto del curso").fill(
+      "Unidad 1: Narrativa\nObjetivo: Analizar la construcción de personajes.\nContenido: Narrador y focalización.\nUnidad 2: Argumentación\nObjetivo: Defender una postura con evidencia.\nContenido: Tesis y fuentes.",
+    );
     await page.getByRole("button", { name: "Crear curso" }).click();
     await expect(page).toHaveURL(/\/app\/courses\/[0-9a-f-]+$/);
     courseId = page.url().split("/").pop();
@@ -28,6 +30,7 @@ test("registers, creates a course and generates a rubric through the real API", 
 
     await page.getByRole("link", { name: /Nueva evaluación/ }).first().click();
     await page.getByLabel("Nombre de la evaluación").fill("Ensayo argumentativo");
+    await page.getByLabel("Unidad del curso").selectOption({ label: "Unidad 2: Argumentación" });
     await page.getByRole("radio", { name: /Escribir un contexto/ }).check();
     await page.getByLabel("Contexto de la actividad").fill("Quiero evaluar un ensayo argumentativo con evidencia y una conclusión clara.");
     await page.getByRole("checkbox").first().check();
@@ -37,6 +40,7 @@ test("registers, creates a course and generates a rubric through the real API", 
 
     await page.getByRole("link", { name: /Abrir chat/ }).click();
     await expect(page.getByRole("heading", { name: "Ensayo argumentativo" })).toBeVisible();
+    await expect(page.getByText("Unidad: Unidad 2: Argumentación.")).toBeVisible();
     await page.getByRole("button", { name: /Generar primera versión/ }).click();
     await expect(page.getByRole("heading", { name: "Rúbrica: Ensayo argumentativo" }).first()).toBeVisible({ timeout: 20_000 });
     if (process.env.REVIEW_SCREENSHOTS) {

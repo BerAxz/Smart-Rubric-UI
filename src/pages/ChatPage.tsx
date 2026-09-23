@@ -16,7 +16,7 @@ import {
 
 type Message = components["schemas"]["ChatMessageRead"];
 
-const firstPrompt = "Analiza la consigna, el contexto y el PDF si existe. Genera una primera versión en español con criterios observables del desempeño; usa los objetivos solo como guía de alineación, no como criterios literales.";
+const firstPrompt = "Analiza la unidad completa, la consigna, el contexto y el PDF si existe. Genera una primera versión en español con criterios observables y adecuados a la tarea; usa los objetivos solo como guía de alineación, no como criterios literales. Después podré pedirte que cambies o elimines cualquier parte.";
 
 function RubricInChat({
   rubric,
@@ -181,9 +181,10 @@ export function ChatPage() {
             <p className="eyebrow">{history.course_name}</p>
             <h1>{history.evaluation_name}</h1>
             <p>
+              {history.unit_name ? `Unidad: ${history.unit_name}. ` : ""}
               {history.source_document_name
-                ? `La IA analizará ${history.source_document_name} y podrás ajustar la rúbrica aquí mismo.`
-                : "Conversa con la IA para crear y ajustar tu rúbrica aquí mismo."}
+                ? `La IA analizará ${history.source_document_name} junto con la unidad completa y podrás ajustar la rúbrica aquí mismo.`
+                : "La IA usará la unidad completa y podrás crear y ajustar la rúbrica aquí mismo."}
             </p>
           </div>
           <MessageSquareText size={26} aria-hidden="true" />
@@ -196,8 +197,8 @@ export function ChatPage() {
               <h2>Empieza una conversación</h2>
               <p>
                 {history.source_document_name
-                  ? "La IA leerá tu PDF, lo contrastará con el curso y propondrá una rúbrica editable."
-                  : "La IA usará tu contexto, objetivos, contenidos y niveles para proponer una rúbrica."}
+                  ? "La IA leerá tu PDF, lo contrastará con la unidad completa y propondrá una rúbrica editable."
+                  : "La IA usará la unidad completa, tu contexto, objetivos, contenidos y niveles para proponer una rúbrica."}
               </p>
               <button className="button button--secondary" type="button" onClick={() => void send(firstPrompt)} disabled={sending}>
                 <Sparkles size={16} aria-hidden="true" /> Generar primera versión
