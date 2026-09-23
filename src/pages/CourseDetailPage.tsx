@@ -44,8 +44,8 @@ export function CourseDetailPage() {
 
   function startEditing() {
     if (!course) return;
-    setOutcomes(course.learning_outcomes.map(({ id, description }) => ({ id, description })));
-    setContents(course.contents.map(({ id, title, description }) => ({ id, title, description })));
+    setOutcomes(course.learning_outcomes.map(({ id, unit_id, description }) => ({ id, unit_id, description })));
+    setContents(course.contents.map(({ id, unit_id, title, description }) => ({ id, unit_id, title, description })));
     setActionError(null); setEditingStructure(true);
   }
 
@@ -112,33 +112,44 @@ export function CourseDetailPage() {
 
 function StructureView({ course }: { course: Course }) {
   if (course.units.length) {
+    const globalOutcomes = course.learning_outcomes.filter((item) => item.unit_id === null);
+    const globalContents = course.contents.filter((item) => item.unit_id === null);
     return (
-      <div className="structure-grid">
-        {course.units.map((unit) => {
-          const unitOutcomes = course.learning_outcomes.filter((item) => item.unit_id === unit.id);
-          const unitContents = course.contents.filter((item) => item.unit_id === unit.id);
-          return (
-            <article className="structure-panel" key={unit.id}>
-              <h3>{unit.title}</h3>
-              {unit.description ? <p className="muted">{unit.description}</p> : null}
-              <p className="eyebrow">Objetivos ({unitOutcomes.length})</p>
-              {unitOutcomes.length ? (
-                <ol className="numbered-list">
-                  {unitOutcomes.map((outcome) => <li key={outcome.id}>{outcome.description}</li>)}
-                </ol>
-              ) : <p className="muted">No hay objetivos guardados.</p>}
-              <p className="eyebrow">Contenidos ({unitContents.length})</p>
-              {unitContents.length ? (
-                <ol className="numbered-list">
-                  {unitContents.map((content) => (
-                    <li key={content.id}><strong>{content.title}</strong>{content.description && <span>{content.description}</span>}</li>
-                  ))}
-                </ol>
-              ) : <p className="muted">No hay contenidos guardados.</p>}
-            </article>
-          );
-        })}
-      </div>
+      <>
+        {globalOutcomes.length || globalContents.length ? (
+          <article className="structure-panel structure-panel--global">
+            <h3>Información general del curso</h3>
+            {globalOutcomes.length ? <><p className="eyebrow">Objetivos generales ({globalOutcomes.length})</p><ol className="numbered-list">{globalOutcomes.map((outcome) => <li key={outcome.id}>{outcome.description}</li>)}</ol></> : null}
+            {globalContents.length ? <><p className="eyebrow">Contenidos generales ({globalContents.length})</p><ol className="numbered-list">{globalContents.map((content) => <li key={content.id}><strong>{content.title}</strong>{content.description && <span>{content.description}</span>}</li>)}</ol></> : null}
+          </article>
+        ) : null}
+        <div className="structure-grid">
+          {course.units.map((unit) => {
+            const unitOutcomes = course.learning_outcomes.filter((item) => item.unit_id === unit.id);
+            const unitContents = course.contents.filter((item) => item.unit_id === unit.id);
+            return (
+              <article className="structure-panel" key={unit.id}>
+                <h3>{unit.title}</h3>
+                {unit.description ? <p className="muted">{unit.description}</p> : null}
+                <p className="eyebrow">Objetivos de la unidad ({unitOutcomes.length})</p>
+                {unitOutcomes.length ? (
+                  <ol className="numbered-list">
+                    {unitOutcomes.map((outcome) => <li key={outcome.id}>{outcome.description}</li>)}
+                  </ol>
+                ) : <p className="muted">No hay objetivos específicos; se usarán los objetivos generales del curso.</p>}
+                <p className="eyebrow">Contenidos ({unitContents.length})</p>
+                {unitContents.length ? (
+                  <ol className="numbered-list">
+                    {unitContents.map((content) => (
+                      <li key={content.id}><strong>{content.title}</strong>{content.description && <span>{content.description}</span>}</li>
+                    ))}
+                  </ol>
+                ) : <p className="muted">No hay contenidos guardados.</p>}
+              </article>
+            );
+          })}
+        </div>
+      </>
     );
   }
   return <div className="structure-grid"><div className="structure-panel"><h3>Objetivos de aprendizaje <span>{course.learning_outcomes.length}</span></h3>{course.learning_outcomes.length ? <ol className="numbered-list">{course.learning_outcomes.map((outcome) => <li key={outcome.id}>{outcome.description}</li>)}</ol> : <p className="muted">No hay objetivos guardados.</p>}</div><div className="structure-panel"><h3>Contenidos <span>{course.contents.length}</span></h3>{course.contents.length ? <ol className="numbered-list">{course.contents.map((content) => <li key={content.id}><strong>{content.title}</strong>{content.description && <span>{content.description}</span>}</li>)}</ol> : <p className="muted">No hay contenidos guardados.</p>}</div></div>;

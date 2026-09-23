@@ -33,10 +33,10 @@ export function EvaluationForm({
 }) {
   const defaultUnitId = initial?.unit?.id ?? course.units[0]?.id ?? "";
   const initialUnitOutcomes = course.learning_outcomes.filter(
-    (item) => !course.units.length || item.unit_id === defaultUnitId,
+    (item) => !course.units.length || item.unit_id === null || item.unit_id === defaultUnitId,
   );
   const initialUnitContents = course.contents.filter(
-    (item) => !course.units.length || item.unit_id === defaultUnitId,
+    (item) => !course.units.length || item.unit_id === null || item.unit_id === defaultUnitId,
   );
   const initialOutcomeIds = initial?.learning_outcomes
     .map((item) => item.id)
@@ -66,10 +66,12 @@ export function EvaluationForm({
 
   const selectedUnit = course.units.find((unit) => unit.id === selectedUnitId) ?? null;
   const scopedOutcomes = course.units.length
-    ? course.learning_outcomes.filter((item) => item.unit_id === selectedUnitId)
+    ? course.learning_outcomes.filter(
+        (item) => item.unit_id === null || item.unit_id === selectedUnitId,
+      )
     : course.learning_outcomes;
   const scopedContents = course.units.length
-    ? course.contents.filter((item) => item.unit_id === selectedUnitId)
+    ? course.contents.filter((item) => item.unit_id === null || item.unit_id === selectedUnitId)
     : course.contents;
 
   function toggle(values: string[], value: string, update: (next: string[]) => void) {
@@ -81,13 +83,15 @@ export function EvaluationForm({
     setSelectedOutcomes(
       course.units.length
         ? course.learning_outcomes
-            .filter((item) => item.unit_id === nextUnitId)
+            .filter((item) => item.unit_id === null || item.unit_id === nextUnitId)
             .map((item) => item.id)
         : selectedOutcomes,
     );
     setSelectedContents(
       course.units.length
-        ? course.contents.filter((item) => item.unit_id === nextUnitId).map((item) => item.id)
+        ? course.contents
+            .filter((item) => item.unit_id === null || item.unit_id === nextUnitId)
+            .map((item) => item.id)
         : selectedContents,
     );
   }
@@ -272,7 +276,8 @@ export function EvaluationForm({
         <legend>Unidad que se evaluará</legend>
         <p className="fieldset-help">
           La IA analizará la unidad completa —su texto, objetivos y contenidos— y la usará como
-          alcance principal de la rúbrica.
+          alcance principal de la rúbrica. Los objetivos generales del curso también estarán
+          disponibles para mantener la alineación.
         </p>
         {course.units.length ? (
           <label className="field">
@@ -337,10 +342,10 @@ export function EvaluationForm({
       </fieldset>
 
       <fieldset className="selection-fieldset">
-        <legend>Objetivos de aprendizaje de la unidad</legend>
+        <legend>Objetivos de aprendizaje</legend>
         <p className="fieldset-help">
-          Selecciona el foco de la evaluación. Los objetivos orientan los criterios; no se copian
-          como criterios literales.
+          Selecciona los objetivos generales y los de la unidad que se evaluará. Orientan los
+          criterios; no se copian como criterios literales.
         </p>
         <div className="check-list">
           {scopedOutcomes.map((outcome) => (

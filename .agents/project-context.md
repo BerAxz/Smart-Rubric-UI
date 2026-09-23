@@ -7,7 +7,9 @@
   las operaciones por dominio.
 - `src/api/generated.ts` se genera desde el OpenAPI del repositorio API vecino.
 - La creación de evaluación vive en `EvaluationForm`; admite una fuente PDF o contexto escrito y
-  exige seleccionar la unidad que delimita el análisis de la IA.
+  exige seleccionar la unidad que delimita el análisis de la IA. Los objetivos generales del
+  curso se muestran junto a los objetivos de la unidad, mientras los contenidos se mantienen
+  asociados a su unidad real.
 - `ChatPage` es deliberadamente una sola conversación: la rúbrica estructurada aparece como una
   tarjeta de un mensaje del asistente, y sus exportaciones parten de esa tarjeta.
 - `src/utils/rubric.ts` exporta Markdown, PDF y Excel en el navegador.
