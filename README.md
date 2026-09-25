@@ -63,7 +63,7 @@ El Dockerfile compila la SPA y la sirve con Nginx. `VITE_API_BASE_URL` se fija d
 
 ```bash
 docker build --build-arg VITE_API_BASE_URL=http://localhost:8000 --build-arg VITE_MAX_PDF_BYTES=10485760 -t smart-rubric-ui .
-docker run --rm -p 5173:80 smart-rubric-ui
+docker run --rm -p 5173:8080 smart-rubric-ui
 ```
 
 Nginx usa `try_files` para que las rutas de React funcionen al recargar una URL profunda. El endpoint de health del contenedor es `/health`.
@@ -76,7 +76,7 @@ Nginx usa `try_files` para que las rutas de React funcionen al recargar una URL 
 
 ```bash
 docker build --build-arg VITE_API_BASE_URL=https://api.example.com --build-arg VITE_MAX_PDF_BYTES=10485760 -t smart-rubric-ui .
-docker run --rm -p 5173:80 smart-rubric-ui
+docker run --rm -p 5173:8080 smart-rubric-ui
 ```
 
 PostgreSQL se despliega junto al backend únicamente para desarrollo o una instalación local. Para producción se recomienda PostgreSQL administrado o una instancia privada, con credenciales en el gestor de secretos y backups/PITR configurados según el procedimiento del README del backend.
