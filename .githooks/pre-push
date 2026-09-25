@@ -1,0 +1,19 @@
+#!/bin/sh
+set -eu
+
+branch=$(git symbolic-ref --quiet --short HEAD || true)
+case "$branch" in
+  main|master|develop|dev)
+    echo "Push rechazado: trabaja en una rama de cambio, no en $branch." >&2
+    exit 1
+    ;;
+esac
+
+while read -r local_ref local_sha remote_ref remote_sha; do
+  case "$remote_ref" in
+    refs/heads/main|refs/heads/master|refs/heads/develop|refs/heads/dev)
+      echo "Push rechazado: no se permite actualizar $remote_ref directamente." >&2
+      exit 1
+      ;;
+  esac
+done

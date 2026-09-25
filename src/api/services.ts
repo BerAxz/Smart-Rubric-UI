@@ -114,6 +114,24 @@ export const sourceDocumentApi = {
       body: JSON.stringify(input),
     });
   },
+  async uploadFile(file: File) {
+    const checksum = await sha256File(file);
+    const intent = await this.createUploadIntent({
+      original_filename: file.name,
+      size_bytes: file.size,
+      sha256: checksum,
+    });
+    try {
+      await this.upload(intent.upload_url, intent.upload_headers ?? {}, file);
+    } catch (uploadError) {
+      if (uploadError instanceof Error && uploadError.message === "direct-upload-failed") {
+        await this.uploadViaApi(intent.document.id, file);
+      } else {
+        throw uploadError;
+      }
+    }
+    return this.complete(intent.document.id, { sha256: checksum });
+  },
   async get(documentId: string) {
     return apiRequest<SourceDocument>(`/api/v1/source-documents/${documentId}`);
   },

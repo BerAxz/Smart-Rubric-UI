@@ -6,17 +6,98 @@ import remarkGfm from "remark-gfm";
 import type { components } from "../api/generated";
 import { chatApi } from "../api/services";
 import { ApiErrorMessage, BackLink, ErrorState, LoadingState } from "../components/common";
-import { isRubricPayload, downloadRubricExcel, downloadRubricMarkdown, downloadRubricPdf, type RubricPayload } from "../utils/rubric";
+import {
+  downloadRubricExcel,
+  downloadRubricMarkdown,
+  downloadRubricPdf,
+  isRubricPayload,
+  type RubricPayload,
+} from "../utils/rubric";
 
 type Message = components["schemas"]["ChatMessageRead"];
 
-const firstPrompt = "Genera una primera versión de la rúbrica con los niveles y criterios adecuados para esta evaluación.";
+const firstPrompt = "Analiza la unidad completa, la consigna, el contexto y el PDF si existe. Genera una primera versión en español con criterios observables y adecuados a la tarea; usa los objetivos solo como guía de alineación, no como criterios literales. Después podré pedirte que cambies o elimines cualquier parte.";
+
+function RubricInChat({
+  rubric,
+  evaluationName,
+  summary,
+  showExport,
+  exporting,
+  onExport,
+}: {
+  rubric: RubricPayload;
+  evaluationName: string;
+  summary: string;
+  showExport: boolean;
+  exporting: string | null;
+  onExport: (type: "markdown" | "pdf" | "excel") => void;
+}) {
+  const levels = rubric.criteria[0] ? Object.keys(rubric.criteria[0].levels) : [];
+  return (
+    <div className="rubric-chat-card">
+      <div className="rubric-chat-card__header">
+        <div>
+          <p className="eyebrow">Rúbrica generada</p>
+          <h2>{rubric.title || `Rúbrica: ${evaluationName}`}</h2>
+          <p className="rubric-meta">{summary}</p>
+        </div>
+        <Sparkles size={21} aria-hidden="true" />
+      </div>
+      {rubric.instructions ? (
+        <div className="rubric-instructions">
+          <strong>Instrucciones</strong>
+          <p>{rubric.instructions}</p>
+        </div>
+      ) : null}
+      <div className="rubric-table-wrap">
+        <table className="rubric-table">
+          <thead>
+            <tr>
+              <th scope="col">Criterio</th>
+              <th scope="col">Qué observar</th>
+              {levels.map((level) => <th scope="col" key={level}>{level}</th>)}
+            </tr>
+          </thead>
+          <tbody>
+            {rubric.criteria.map((criterion) => (
+              <tr key={`${criterion.criterion}-${criterion.description}`}>
+                <th scope="row">{criterion.criterion}</th>
+                <td>{criterion.description}</td>
+                {levels.map((level) => <td key={level}>{criterion.levels[level] ?? ""}</td>)}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+      {rubric.suggestions?.length ? (
+        <div className="rubric-suggestions">
+          <strong>Sugerencias para revisarla</strong>
+          <ul>{rubric.suggestions.map((suggestion) => <li key={suggestion}>{suggestion}</li>)}</ul>
+        </div>
+      ) : null}
+      {showExport ? (
+        <div className="export-actions">
+          <span>Exportar desde este chat</span>
+          <button className="button button--quiet button--small" type="button" disabled={Boolean(exporting)} onClick={() => onExport("markdown")}>
+            <Download size={14} aria-hidden="true" /> Markdown
+          </button>
+          <button className="button button--quiet button--small" type="button" disabled={Boolean(exporting)} onClick={() => onExport("pdf")}>
+            <FileText size={14} aria-hidden="true" /> PDF
+          </button>
+          <button className="button button--quiet button--small" type="button" disabled={Boolean(exporting)} onClick={() => onExport("excel")}>
+            <FileSpreadsheet size={14} aria-hidden="true" /> Excel
+          </button>
+        </div>
+      ) : null}
+    </div>
+  );
+}
 
 export function ChatPage() {
   const { evaluationId = "" } = useParams();
   const [history, setHistory] = useState<components["schemas"]["ChatHistoryRead"] | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
-  const [rubric, setRubric] = useState<RubricPayload | null>(null);
   const [draft, setDraft] = useState("");
   const [loading, setLoading] = useState(true);
   const [sending, setSending] = useState(false);
@@ -25,49 +106,170 @@ export function ChatPage() {
   const endRef = useRef<HTMLDivElement>(null);
 
   const load = useCallback(async () => {
-    setLoading(true); setError(null);
+    setLoading(true);
+    setError(null);
     try {
       const response = await chatApi.history(evaluationId);
-      setHistory(response); setMessages(response.messages);
-      const latestRubric = [...response.messages].reverse().find((message) => isRubricPayload(message.structured_payload));
-      setRubric(latestRubric && isRubricPayload(latestRubric.structured_payload) ? latestRubric.structured_payload : null);
-    } catch (loadError) { setError(loadError); }
-    finally { setLoading(false); }
+      setHistory(response);
+      setMessages(response.messages);
+    } catch (loadError) {
+      setError(loadError);
+    } finally {
+      setLoading(false);
+    }
   }, [evaluationId]);
+
   useEffect(() => { void load(); }, [load]);
   useEffect(() => { endRef.current?.scrollIntoView({ behavior: "smooth", block: "nearest" }); }, [messages, sending]);
+
+  const latestRubricMessage = useMemo(
+    () => [...messages].reverse().find((message) => message.role === "assistant" && isRubricPayload(message.structured_payload)),
+    [messages],
+  );
+  const latestRubric = latestRubricMessage && isRubricPayload(latestRubricMessage.structured_payload)
+    ? latestRubricMessage.structured_payload
+    : null;
+  const rubricSummary = latestRubric
+    ? `${latestRubric.criteria.length} criterios · ${Object.keys(latestRubric.criteria[0]?.levels ?? {}).length} niveles`
+    : "";
 
   async function send(message = draft) {
     const cleanMessage = message.trim();
     if (!cleanMessage || sending) return;
-    setSending(true); setError(null); setDraft("");
+    setSending(true);
+    setError(null);
+    setDraft("");
     try {
       const response = await chatApi.send(evaluationId, { message: cleanMessage });
       setMessages((items) => [...items, response.user_message, response.assistant_message]);
-      setRubric(response.rubric);
     } catch (sendError) {
-      setError(sendError); setDraft(message);
-    } finally { setSending(false); }
+      setError(sendError);
+      setDraft(message);
+    } finally {
+      setSending(false);
+    }
   }
 
   async function exportFile(type: "markdown" | "pdf" | "excel") {
-    if (!rubric || !history) return;
+    if (!latestRubric || !history) return;
     setExporting(type);
     try {
-      if (type === "markdown") downloadRubricMarkdown(rubric, history.evaluation_name);
-      if (type === "pdf") await downloadRubricPdf(rubric, history.evaluation_name);
-      if (type === "excel") await downloadRubricExcel(rubric, history.evaluation_name);
+      if (type === "markdown") downloadRubricMarkdown(latestRubric, history.evaluation_name);
+      if (type === "pdf") await downloadRubricPdf(latestRubric, history.evaluation_name);
+      if (type === "excel") await downloadRubricExcel(latestRubric, history.evaluation_name);
     } catch (exportError) {
       setError(exportError);
-    } finally { setExporting(null); }
+    } finally {
+      setExporting(null);
+    }
   }
 
   const hasMessages = messages.length > 0;
-  const rubricSummary = useMemo(() => rubric ? `${rubric.criteria.length} criterios · ${Object.keys(rubric.criteria[0]?.levels ?? {}).length} niveles` : null, [rubric]);
 
   if (loading) return <LoadingState label="Cargando conversación…" />;
-  if (error && !history) return <div className="content-narrow"><BackLink to="/app" /><ErrorState message={<ApiErrorMessage error={error} />} onRetry={() => void load()} /></div>;
+  if (error && !history) {
+    return <div className="content-narrow"><BackLink to="/app" /><ErrorState message={<ApiErrorMessage error={error} />} onRetry={() => void load()} /></div>;
+  }
   if (!history) return null;
 
-  return <div className="chat-layout"><div className="chat-main"><BackLink to={`/app/evaluations/${history.evaluation_id}`}>Volver a la evaluación</BackLink><div className="chat-heading"><div><p className="eyebrow">{history.course_name}</p><h1>{history.evaluation_name}</h1><p>Conversa sobre tu rúbrica y ajusta sus criterios.</p></div><MessageSquareText size={26} aria-hidden="true" /></div><div className="chat-thread" aria-live="polite">{!hasMessages && <div className="chat-welcome"><div className="chat-welcome__icon"><Sparkles size={22} aria-hidden="true" /></div><h2>Empieza una conversación</h2><p>La IA usará los objetivos, contenidos y niveles que definiste para proponer una rúbrica.</p><button className="button button--secondary" type="button" onClick={() => void send(firstPrompt)} disabled={sending}><Sparkles size={16} aria-hidden="true" /> Generar primera versión</button></div>}{messages.map((message) => <article className={`chat-message chat-message--${message.role === "user" ? "user" : "assistant"}`} key={message.id}><div className="chat-message__label">{message.role === "user" ? "Tú" : "Smart Rubric"}</div>{message.role === "assistant" ? <div className="markdown"><ReactMarkdown remarkPlugins={[remarkGfm]}>{message.content}</ReactMarkdown></div> : <p>{message.content}</p>}</article>)}{sending && <article className="chat-message chat-message--assistant"><div className="chat-message__label">Smart Rubric</div><div className="typing"><LoaderCircle className="spin" size={17} aria-hidden="true" /> Generando una respuesta…</div></article>}<div ref={endRef} /></div>{error ? <ErrorState message={<ApiErrorMessage error={error} />} /> : null}{!hasMessages && !sending && <p className="chat-hint">También puedes escribir una instrucción concreta abajo.</p>}<form className="chat-composer" onSubmit={(event) => { event.preventDefault(); void send(); }}><label htmlFor="chat-message" className="sr-only">Mensaje para la conversación</label><textarea id="chat-message" rows={3} value={draft} onChange={(event) => setDraft(event.target.value)} onKeyDown={(event) => { if (event.key === "Enter" && !event.shiftKey) { event.preventDefault(); void send(); } }} placeholder="Pide un ajuste, una sugerencia o una nueva versión…" disabled={sending} /><button className="button button--primary" type="submit" disabled={sending || !draft.trim()}><Send size={17} aria-hidden="true" /> Enviar</button><small>Enter para enviar · Shift + Enter para una nueva línea</small></form></div><aside className="rubric-panel"><div className="rubric-panel__header"><div><p className="eyebrow">Resultado</p><h2>{rubric?.title ?? "Tu rúbrica"}</h2></div><Sparkles size={20} aria-hidden="true" /></div>{rubric ? <><p className="rubric-meta">{rubricSummary}</p>{rubric.instructions && <div className="rubric-instructions"><strong>Instrucciones</strong><p>{rubric.instructions}</p></div>}<div className="rubric-criteria">{rubric.criteria.map((criterion) => <article className="rubric-criterion" key={`${criterion.criterion}-${criterion.description}`}><h3>{criterion.criterion}</h3><p>{criterion.description}</p><dl>{Object.entries(criterion.levels).map(([level, description]) => <div key={level}><dt>{level}</dt><dd>{description}</dd></div>)}</dl></article>)}</div>{rubric.suggestions?.length ? <div className="rubric-suggestions"><strong>Sugerencias</strong><ul>{rubric.suggestions.map((suggestion) => <li key={suggestion}>{suggestion}</li>)}</ul></div> : null}<div className="export-actions"><span>Exportar</span><button className="button button--quiet button--small" type="button" disabled={Boolean(exporting)} onClick={() => void exportFile("markdown")}><Download size={14} aria-hidden="true" /> Markdown</button><button className="button button--quiet button--small" type="button" disabled={Boolean(exporting)} onClick={() => void exportFile("pdf")}><FileText size={14} aria-hidden="true" /> PDF</button><button className="button button--quiet button--small" type="button" disabled={Boolean(exporting)} onClick={() => void exportFile("excel")}><FileSpreadsheet size={14} aria-hidden="true" /> Excel</button></div></> : <div className="rubric-empty"><Sparkles size={22} aria-hidden="true" /><p>La rúbrica aparecerá aquí después de la primera respuesta.</p></div>}</aside></div>;
+  return (
+    <div className="chat-layout chat-layout--solo">
+      <div className="chat-main chat-main--solo">
+        <BackLink to={`/app/evaluations/${history.evaluation_id}`}>Volver a la evaluación</BackLink>
+        <div className="chat-heading">
+          <div>
+            <p className="eyebrow">{history.course_name}</p>
+            <h1>{history.evaluation_name}</h1>
+            <p>
+              {history.unit_name ? `Unidad: ${history.unit_name}. ` : ""}
+              {history.source_document_name
+                ? `La IA analizará ${history.source_document_name} junto con la unidad completa y podrás ajustar la rúbrica aquí mismo.`
+                : "La IA usará la unidad completa y podrás crear y ajustar la rúbrica aquí mismo."}
+            </p>
+          </div>
+          <MessageSquareText size={26} aria-hidden="true" />
+        </div>
+
+        <div className="chat-thread" aria-live="polite">
+          {!hasMessages ? (
+            <div className="chat-welcome">
+              <div className="chat-welcome__icon"><Sparkles size={22} aria-hidden="true" /></div>
+              <h2>Empieza una conversación</h2>
+              <p>
+                {history.source_document_name
+                  ? "La IA leerá tu PDF, lo contrastará con la unidad completa y propondrá una rúbrica editable."
+                  : "La IA usará la unidad completa, tu contexto, objetivos, contenidos y niveles para proponer una rúbrica."}
+              </p>
+              <button className="button button--secondary" type="button" onClick={() => void send(firstPrompt)} disabled={sending}>
+                <Sparkles size={16} aria-hidden="true" /> Generar primera versión
+              </button>
+            </div>
+          ) : null}
+
+          {messages.map((message) => {
+            const messageRubric = message.role === "assistant" && isRubricPayload(message.structured_payload)
+              ? message.structured_payload
+              : null;
+            return (
+              <article className={`chat-message chat-message--${message.role === "user" ? "user" : "assistant"} ${messageRubric ? "chat-message--rubric" : ""}`} key={message.id}>
+                <div className="chat-message__label">{message.role === "user" ? "Tú" : "Smart Rubric"}</div>
+                {messageRubric ? (
+                  <>
+                    <p className="rubric-message-intro">He preparado una versión de la rúbrica. Revísala y dime qué quieres ajustar.</p>
+                    <RubricInChat
+                      rubric={messageRubric}
+                      evaluationName={history.evaluation_name}
+                      summary={message.id === latestRubricMessage?.id ? rubricSummary : `${messageRubric.criteria.length} criterios`}
+                      showExport={message.id === latestRubricMessage?.id}
+                      exporting={exporting}
+                      onExport={(type) => void exportFile(type)}
+                    />
+                  </>
+                ) : message.role === "assistant" ? (
+                  <div className="markdown"><ReactMarkdown remarkPlugins={[remarkGfm]}>{message.content}</ReactMarkdown></div>
+                ) : (
+                  <p>{message.content}</p>
+                )}
+              </article>
+            );
+          })}
+
+          {sending ? (
+            <article className="chat-message chat-message--assistant">
+              <div className="chat-message__label">Smart Rubric</div>
+              <div className="typing"><LoaderCircle className="spin" size={17} aria-hidden="true" /> Generando una respuesta…</div>
+            </article>
+          ) : null}
+          <div ref={endRef} />
+        </div>
+
+        {error ? <ErrorState message={<ApiErrorMessage error={error} />} /> : null}
+        {!hasMessages && !sending ? <p className="chat-hint">También puedes escribir una instrucción concreta abajo.</p> : null}
+        <form
+          className="chat-composer"
+          onSubmit={(event) => { event.preventDefault(); void send(); }}
+        >
+          <label htmlFor="chat-message" className="sr-only">Mensaje para la conversación</label>
+          <textarea
+            id="chat-message"
+            rows={3}
+            value={draft}
+            onChange={(event) => setDraft(event.target.value)}
+            onKeyDown={(event) => {
+              if (event.key === "Enter" && !event.shiftKey) {
+                event.preventDefault();
+                void send();
+              }
+            }}
+            placeholder="Pide un ajuste, una sugerencia o una nueva versión…"
+            disabled={sending}
+          />
+          <button className="button button--primary" type="submit" disabled={sending || !draft.trim()}>
+            <Send size={17} aria-hidden="true" /> Enviar
+          </button>
+          <small>Enter para enviar · Shift + Enter para una nueva línea</small>
+        </form>
+      </div>
+    </div>
+  );
 }

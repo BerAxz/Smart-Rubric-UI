@@ -31,9 +31,12 @@ build independiente también funcione; `npm run generate:api` lo actualiza desde
 - Dashboard, listado global de evaluaciones y cuenta.
 - Creación de cursos desde PDF o texto, edición de objetivos/contenidos, renombrado y archivado.
 - Los PDFs se suben directamente a la URL prefirmada que entrega FastAPI; si el proveedor local no permite CORS, el cliente usa el fallback multipart autenticado. El navegador nunca recibe credenciales S3/R2/MinIO.
-- Creación y edición de evaluaciones con niveles de logro, objetivos, contenidos, contexto y criterios adicionales.
+- Creación y edición de evaluaciones con niveles de logro, objetivos y contenidos; puedes subir el
+  PDF de una evaluación existente para que la IA lo analice o escribir un contexto como
+  “quiero una presentación sobre…”.
 - Chat persistido por evaluación conectado a la respuesta estructurada del backend.
-- Exportación local de la rúbrica resultante a Markdown, PDF y Excel.
+- La rúbrica se visualiza como un mensaje dentro del chat, sin panel de resultado separado, y se
+  exporta desde esa misma conversación a Markdown, PDF y Excel.
 
 El cliente API centralizado (`src/api/client.ts`) agrega el bearer token, intenta una única renovación ante `401`, interpreta el contrato de error `{ error: { code, message, details } }` y limpia las credenciales cuando la sesión deja de ser válida.
 
@@ -60,7 +63,7 @@ El Dockerfile compila la SPA y la sirve con Nginx. `VITE_API_BASE_URL` se fija d
 
 ```bash
 docker build --build-arg VITE_API_BASE_URL=http://localhost:8000 --build-arg VITE_MAX_PDF_BYTES=10485760 -t smart-rubric-ui .
-docker run --rm -p 5173:80 smart-rubric-ui
+docker run --rm -p 5173:8080 smart-rubric-ui
 ```
 
 Nginx usa `try_files` para que las rutas de React funcionen al recargar una URL profunda. El endpoint de health del contenedor es `/health`.
@@ -73,7 +76,7 @@ Nginx usa `try_files` para que las rutas de React funcionen al recargar una URL 
 
 ```bash
 docker build --build-arg VITE_API_BASE_URL=https://api.example.com --build-arg VITE_MAX_PDF_BYTES=10485760 -t smart-rubric-ui .
-docker run --rm -p 5173:80 smart-rubric-ui
+docker run --rm -p 5173:8080 smart-rubric-ui
 ```
 
 PostgreSQL se despliega junto al backend únicamente para desarrollo o una instalación local. Para producción se recomienda PostgreSQL administrado o una instancia privada, con credenciales en el gestor de secretos y backups/PITR configurados según el procedimiento del README del backend.
@@ -90,3 +93,10 @@ src/
 ```
 
 La API real sigue siendo la autoridad de permisos. El frontend no intenta inferir acceso: ante una respuesta `401/403/404` muestra el error y permite volver a intentar o regresar al espacio de trabajo.
+
+## Flujo de agentes y ramas
+
+El contexto para agentes está en [`AGENTS.md`](AGENTS.md) y [`.agents/`](.agents/). Ejecuta
+`scripts/setup-hooks.sh` después de clonar; los hooks bloquean commits y pushes directos a
+`main`, `develop` y `dev`. El remoto usa `dev` como rama base y `scripts/start-feature.sh`
+crea ramas de trabajo desde allí.
