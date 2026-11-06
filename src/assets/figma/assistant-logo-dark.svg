@@ -1,0 +1,9 @@
+<svg preserveAspectRatio="none" overflow="visible" style="display: block;" width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+<g id="Grid / four criteria">
+<rect id="Criterion / 01" x="1.76471" y="1.76471" width="9.35294" height="9.35294" rx="2.18824" fill="#96AEF8"/>
+<rect id="Criterion / 02" x="12.8824" y="1.76471" width="9.35294" height="9.35294" rx="2.18824" fill="#BFCFFF"/>
+<rect id="Criterion / 03" x="1.76471" y="12.8824" width="9.35294" height="9.35294" rx="2.18824" fill="#E2EAFE"/>
+<rect id="Criterion / Approved" x="12.8824" y="12.8824" width="9.35294" height="9.35294" rx="2.18824" fill="#526FE2"/>
+<path id="Approved / check mark" d="M15.1059 17.5059L17.0118 19.3412L20.8235 15.3882" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" stroke="white"/>
+</g>
+</svg>

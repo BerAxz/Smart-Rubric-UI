@@ -1,5 +1,5 @@
 import { Download, FileSpreadsheet, FileText, LoaderCircle, MessageSquareText, Send, Sparkles } from "lucide-react";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import ReactMarkdown from "react-markdown";
 import { useParams } from "react-router-dom";
 import remarkGfm from "remark-gfm";
@@ -11,12 +11,13 @@ import {
   downloadRubricMarkdown,
   downloadRubricPdf,
   isRubricPayload,
+  rubricScoreForLevel,
   type RubricPayload,
 } from "../utils/rubric";
 
 type Message = components["schemas"]["ChatMessageRead"];
 
-const firstPrompt = "Analiza la unidad completa, la consigna, el contexto y el PDF si existe. Genera una primera versión en español con criterios observables y adecuados a la tarea; usa los objetivos solo como guía de alineación, no como criterios literales. Después podré pedirte que cambies o elimines cualquier parte.";
+const firstPrompt = "Analiza la evaluación adjunta en PDF o descrita, y alinéala con la unidad seleccionada, sus objetivos, contenidos y niveles de logro. Genera una primera versión en español con criterios observables y adecuados a la tarea; usa los objetivos como guía, no como criterios literales. Después podré pedirte que cambies o elimines cualquier parte.";
 
 function RubricInChat({
   rubric,
@@ -34,6 +35,7 @@ function RubricInChat({
   onExport: (type: "markdown" | "pdf" | "excel") => void;
 }) {
   const levels = rubric.criteria[0] ? Object.keys(rubric.criteria[0].levels) : [];
+  const levelColumnWidth = `${64 / Math.max(levels.length, 1)}%`;
   return (
     <div className="rubric-chat-card">
       <div className="rubric-chat-card__header">
@@ -52,6 +54,11 @@ function RubricInChat({
       ) : null}
       <div className="rubric-table-wrap">
         <table className="rubric-table">
+          <colgroup>
+            <col style={{ width: "16%" }} />
+            <col style={{ width: "20%" }} />
+            {levels.map((level) => <col key={level} style={{ width: levelColumnWidth }} />)}
+          </colgroup>
           <thead>
             <tr>
               <th scope="col">Criterio</th>
@@ -61,11 +68,26 @@ function RubricInChat({
           </thead>
           <tbody>
             {rubric.criteria.map((criterion) => (
-              <tr key={`${criterion.criterion}-${criterion.description}`}>
-                <th scope="row">{criterion.criterion}</th>
-                <td>{criterion.description}</td>
-                {levels.map((level) => <td key={level}>{criterion.levels[level] ?? ""}</td>)}
-              </tr>
+              <Fragment key={`${criterion.criterion}-${criterion.description}`}>
+                <tr>
+                  <th scope="row">{criterion.criterion}</th>
+                  <td>{criterion.description}</td>
+                  {levels.map((level, levelIndex) => (
+                    <td data-level={level} key={level}>
+                      {criterion.levels[level] ?? ""}
+                      <span className="rubric-table__mobile-score">
+                        Puntaje: {rubricScoreForLevel(criterion, level, levelIndex)}
+                      </span>
+                    </td>
+                  ))}
+                </tr>
+                <tr className="rubric-table__score-row">
+                  <th scope="row" colSpan={2}>Puntaje</th>
+                  {levels.map((level, levelIndex) => (
+                    <td key={level}>{rubricScoreForLevel(criterion, level, levelIndex)}</td>
+                  ))}
+                </tr>
+              </Fragment>
             ))}
           </tbody>
         </table>
@@ -130,7 +152,14 @@ export function ChatPage() {
     ? latestRubricMessage.structured_payload
     : null;
   const rubricSummary = latestRubric
-    ? `${latestRubric.criteria.length} criterios · ${Object.keys(latestRubric.criteria[0]?.levels ?? {}).length} niveles`
+    ? (() => {
+        const levels = Object.keys(latestRubric.criteria[0]?.levels ?? {});
+        const maxPoints = latestRubric.criteria.reduce(
+          (total, criterion) => total + Math.max(0, ...levels.map((level, index) => rubricScoreForLevel(criterion, level, index))),
+          0,
+        );
+        return `${latestRubric.criteria.length} criterios · ${levels.length} niveles · ${maxPoints} puntos posibles`;
+      })()
     : "";
 
   async function send(message = draft) {
@@ -212,7 +241,6 @@ export function ChatPage() {
               : null;
             return (
               <article className={`chat-message chat-message--${message.role === "user" ? "user" : "assistant"} ${messageRubric ? "chat-message--rubric" : ""}`} key={message.id}>
-                <div className="chat-message__label">{message.role === "user" ? "Tú" : "Smart Rubric"}</div>
                 {messageRubric ? (
                   <>
                     <p className="rubric-message-intro">He preparado una versión de la rúbrica. Revísala y dime qué quieres ajustar.</p>
@@ -236,7 +264,6 @@ export function ChatPage() {
 
           {sending ? (
             <article className="chat-message chat-message--assistant">
-              <div className="chat-message__label">Smart Rubric</div>
               <div className="typing"><LoaderCircle className="spin" size={17} aria-hidden="true" /> Generando una respuesta…</div>
             </article>
           ) : null}

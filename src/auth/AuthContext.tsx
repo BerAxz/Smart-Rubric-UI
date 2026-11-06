@@ -8,7 +8,7 @@ interface AuthContextValue {
   isLoading: boolean;
   isAuthenticated: boolean;
   login: (email: string, password: string) => Promise<void>;
-  register: (email: string, password: string) => Promise<void>;
+  register: (fullName: string, email: string, password: string) => Promise<void>;
   logout: () => Promise<void>;
   refreshUser: () => Promise<void>;
 }
@@ -72,8 +72,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   );
 
   const register = useCallback(
-    async (email: string, password: string) => {
-      applyAuth(await authApi.register({ email, password }));
+    async (fullName: string, email: string, password: string) => {
+      applyAuth(await authApi.register({ full_name: fullName.trim(), email, password }));
+      try {
+        localStorage.setItem(`smart-rubric-display-name:${email.trim().toLowerCase()}`, fullName.trim());
+      } catch {
+        // The API currently does not persist full_name; keep it as a local display fallback.
+      }
     },
     [applyAuth],
   );

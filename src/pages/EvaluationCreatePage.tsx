@@ -3,7 +3,7 @@ import { useNavigate, useParams } from "react-router-dom";
 import type { components } from "../api/generated";
 import { courseApi, evaluationApi, sourceDocumentApi } from "../api/services";
 import { EvaluationForm, type EvaluationFormPayload } from "../components/EvaluationForm";
-import { ApiErrorMessage, BackLink, ErrorState, LoadingState, PageHeader } from "../components/common";
+import { ApiErrorMessage, BackLink, ErrorState, LoadingState } from "../components/common";
 
 export function EvaluationCreatePage() {
   const { courseId = "" } = useParams();
@@ -37,5 +37,5 @@ export function EvaluationCreatePage() {
 
   if (loading) return <LoadingState label="Cargando contexto del curso…" />;
   if (error || !course) return <div className="content-narrow"><BackLink to={`/app/courses/${courseId}`} />{error ? <ErrorState message={<ApiErrorMessage error={error} />} onRetry={() => void load()} /> : <ErrorState message="No encontramos este curso." />}</div>;
-  return <div className="content-narrow content-narrow--form"><BackLink to={`/app/courses/${course.id}`}>Volver al curso</BackLink><PageHeader eyebrow="Nueva evaluación" title="Crea una evaluación con ayuda de la IA" description="Sube una evaluación en PDF para analizarla o describe la actividad que quieres diseñar." /><EvaluationForm course={course} loading={saving} submitLabel="Crear evaluación" onSubmit={submit} onCancel={() => navigate(`/app/courses/${course.id}`)} /></div>;
+  return <div className="content-narrow content-narrow--form"><BackLink to={`/app/courses/${course.id}`}>Volver al curso</BackLink><EvaluationForm course={course} loading={saving} submitLabel="Crear evaluación" onSubmit={submit} onCancel={() => navigate(`/app/courses/${course.id}`)} /></div>;
 }

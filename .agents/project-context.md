@@ -6,13 +6,19 @@
 - `src/api/client.ts` centraliza bearer token, refresh y errores; `src/api/services.ts` contiene
   las operaciones por dominio.
 - `src/api/generated.ts` se genera desde el OpenAPI del repositorio API vecino.
-- La creación de evaluación vive en `EvaluationForm`; admite una fuente PDF o contexto escrito y
-  exige seleccionar la unidad que delimita el análisis de la IA. Los objetivos generales del
-  curso se muestran junto a los objetivos de la unidad, mientras los contenidos se mantienen
-  asociados a su unidad real.
-- `ChatPage` es deliberadamente una sola conversación: la rúbrica estructurada aparece como una
-  tarjeta de un mensaje del asistente, y sus exportaciones parten de esa tarjeta.
-- `src/utils/rubric.ts` exporta Markdown, PDF y Excel en el navegador.
+- La creación de evaluación vive en `EvaluationForm`; admite una fuente PDF o descripción escrita y
+  presenta tres pasos: información, unidad/objetivos/contenidos y niveles de logro.
+- `CourseCreatePage` crea el curso desde PDF o texto y dirige a `CourseDetailPage?review=1`; allí se
+  revisan y guardan objetivos y contenidos con `courseApi.updateStructure` antes de iniciar una
+  evaluación.
+- La navegación de `/app` usa un sidebar de escritorio y un drawer móvil. `/app/courses`,
+  `/app/chats` y `/app/settings` son rutas de biblioteca y preferencias; el tema claro/oscuro se
+  persiste localmente desde `ThemeContext`.
+- `ChatPage` es deliberadamente una sola conversación: la rúbrica estructurada aparece en el hilo,
+  muestra puntajes debajo de cada criterio y sus exportaciones parten de esa respuesta.
+- `src/utils/rubric.ts` exporta Markdown, PDF y Excel en el navegador. Excel replica la matriz de
+  `Rubrica esperada.pdf`: encabezado verde, criterios amarillos, filas de puntaje y conversión de
+  puntaje a nota con exigencia del 60 %.
 
 ## Contratos importantes
 
@@ -20,6 +26,9 @@
   multipart autenticado. Nunca se envían credenciales del bucket al navegador.
 - `EvaluationCreate.source_document_id` solo se envía después de que `sourceDocumentApi.uploadFile`
   devuelve un documento `ready`.
+- El endpoint de registro no recibe nombre completo. El frontend lo conserva localmente por correo
+  hasta que se acuerde el cambio de perfil; la discrepancia está registrada en Smart-Rubric-API
+  issue #5.
 - Una respuesta de chat puede incluir `structured_payload`; `isRubricPayload` decide si se muestra
   como rúbrica visual o como Markdown normal.
 - Si cambia el backend, ejecuta `npm run generate:api` antes de tocar componentes.

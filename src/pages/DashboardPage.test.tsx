@@ -24,6 +24,6 @@ describe("DashboardPage", () => {
   it("shows the empty states returned by an empty backend", async () => {
     render(<MemoryRouter><DashboardPage /></MemoryRouter>);
     expect(await screen.findByText("Aún no tienes cursos")).toBeInTheDocument();
-    expect(screen.getByText("Todavía no hay evaluaciones")).toBeInTheDocument();
+    expect(screen.getByText("Todavía no hay chats")).toBeInTheDocument();
   });
 });

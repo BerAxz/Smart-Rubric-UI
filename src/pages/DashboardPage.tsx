@@ -1,10 +1,10 @@
-import { ArrowRight, BookOpen, FileText, Plus } from "lucide-react";
-import { useCallback, useEffect, useState } from "react";
+import { ArrowRight } from "lucide-react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import type { components } from "../api/generated";
 import { courseApi, evaluationApi } from "../api/services";
 import { ApiErrorMessage, EmptyState, ErrorState, LoadingState, PageHeader } from "../components/common";
-import { formatDate, trimText } from "../utils/format";
+import { ConversationRow, CourseTile } from "../components/WorkspaceCards";
 
 type Course = components["schemas"]["CourseRead"];
 type Evaluation = components["schemas"]["EvaluationRead"];
@@ -16,7 +16,8 @@ export function DashboardPage() {
   const [error, setError] = useState<unknown>(null);
 
   const load = useCallback(async () => {
-    setLoading(true); setError(null);
+    setLoading(true);
+    setError(null);
     try {
       const [courseResponse, evaluationResponse] = await Promise.all([courseApi.list(), evaluationApi.list()]);
       setCourses(courseResponse.items);
@@ -29,35 +30,45 @@ export function DashboardPage() {
   }, []);
 
   useEffect(() => { void load(); }, [load]);
+  const courseNames = useMemo(() => Object.fromEntries(courses.map((course) => [course.id, course.name])), [courses]);
+  const latest = evaluations[0];
 
   if (loading) return <LoadingState label="Cargando tu espacio…" />;
   return (
-    <div className="content-narrow">
-      <PageHeader
-        eyebrow="Espacio de trabajo"
-        title="Tus evaluaciones"
-        description="Organiza cursos y convierte sus objetivos en rúbricas accionables."
-        actions={<Link className="button button--primary" to="/app/courses/new"><Plus size={17} aria-hidden="true" /> Nuevo curso</Link>}
-      />
-      {error ? <ErrorState message={<ApiErrorMessage error={error} />} onRetry={() => void load()} /> : null}
-      {!error && <>
-        <section className="section-block">
-          <div className="section-heading"><div><p className="eyebrow">Base de trabajo</p><h2>Cursos</h2></div>{courses.length > 0 && <span className="count-badge">{courses.length}</span>}</div>
-          {courses.length === 0 ? <EmptyState title="Aún no tienes cursos" description="Crea tu primer curso cargando el material o pegando su texto base." action={<Link className="button button--secondary" to="/app/courses/new"><Plus size={16} aria-hidden="true" /> Crear curso</Link>} /> : <div className="card-grid">{courses.map((course) => <CourseCard key={course.id} course={course} />)}</div>}
-        </section>
-        <section className="section-block">
-          <div className="section-heading"><div><p className="eyebrow">Trabajo reciente</p><h2>Evaluaciones</h2></div>{evaluations.length > 0 && <span className="count-badge">{evaluations.length}</span>}</div>
-          {evaluations.length === 0 ? <EmptyState title="Todavía no hay evaluaciones" description="Abre un curso y selecciona sus objetivos para crear una." /> : <div className="evaluation-list">{evaluations.slice(0, 6).map((evaluation) => <EvaluationCard key={evaluation.id} evaluation={evaluation} />)}</div>}
-        </section>
-      </>}
+    <div className="content-narrow workspace-home">
+      <PageHeader title="Tu espacio de trabajo" description="Continúa una conversación o entra a uno de tus cursos." />
+      {error ? <ErrorState message={<ApiErrorMessage error={error} />} onRetry={() => void load()} /> : (
+        <>
+          <section className="continue-section">
+            <p className="section-kicker">RETOMAR</p>
+            {latest ? (
+              <div className="continue-row">
+                <div><strong>{latest.name}</strong><small>{courseNames[latest.course_id] ?? "Curso"} · Conversación reciente</small></div>
+                <Link className="button button--primary continue-row__action" to={`/app/evaluations/${latest.id}/chat`}>Continuar chat <ArrowRight size={16} aria-hidden="true" /></Link>
+              </div>
+            ) : (
+              <div className="continue-row continue-row--empty">
+                <div><strong>Cuando empieces una evaluación, la conversación aparecerá aquí.</strong><small>Tu trabajo reciente queda a mano.</small></div>
+                <Link className="button button--primary continue-row__action" to={courses[0] ? `/app/courses/${courses[0].id}` : "/app/courses/new"}>{courses[0] ? "Abrir curso" : "Crear curso"} <ArrowRight size={16} aria-hidden="true" /></Link>
+              </div>
+            )}
+          </section>
+
+          <section className="workspace-section">
+            <div className="workspace-section__heading"><h2>Cursos</h2><Link to="/app/courses">Ver todos los cursos</Link></div>
+            {courses.length ? <div className="course-grid course-grid--dashboard">{courses.slice(0, 3).map((course) => <CourseTile course={course} key={course.id} />)}</div> : (
+              <EmptyState title="Aún no tienes cursos" description="Crea tu primer curso desde un PDF o pegando el contenido del programa." action={<Link className="button button--primary" to="/app/courses/new">＋ Crear curso</Link>} />
+            )}
+          </section>
+
+          <section className="workspace-section workspace-section--conversations">
+            <div className="workspace-section__heading"><h2>Chats recientes</h2><Link to="/app/chats">Ver todos los chats</Link></div>
+            {evaluations.length ? <div className="conversation-list conversation-list--dashboard">{evaluations.slice(0, 4).map((evaluation: Evaluation) => <ConversationRow key={evaluation.id} evaluation={evaluation} courseName={courseNames[evaluation.course_id] ?? "Curso"} compact />)}</div> : (
+              <EmptyState title="Todavía no hay chats" description="Crea una evaluación para comenzar una conversación con Smart Rubric." />
+            )}
+          </section>
+        </>
+      )}
     </div>
   );
-}
-
-function CourseCard({ course }: { course: Course }) {
-  return <Link className="entity-card" to={`/app/courses/${course.id}`}><div className="entity-card__icon"><BookOpen size={19} aria-hidden="true" /></div><div className="entity-card__body"><h3>{course.name}</h3><p>{course.learning_outcomes.length} objetivos · {course.contents.length} contenidos</p><small>Actualizado {formatDate(course.updated_at)}</small></div><ArrowRight className="entity-card__arrow" size={18} aria-hidden="true" /></Link>;
-}
-
-function EvaluationCard({ evaluation }: { evaluation: Evaluation }) {
-  return <Link className="evaluation-card" to={`/app/evaluations/${evaluation.id}`}><div className="evaluation-card__icon"><FileText size={18} aria-hidden="true" /></div><div><h3>{evaluation.name}</h3><p>{evaluation.learning_outcomes.length} objetivos · {evaluation.achievement_levels.length} niveles</p><small>{trimText(evaluation.task_context ?? "Sin contexto adicional", 90)}</small></div><span className="evaluation-card__date">{formatDate(evaluation.updated_at)}</span></Link>;
 }
