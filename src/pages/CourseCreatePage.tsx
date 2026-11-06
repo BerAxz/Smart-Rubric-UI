@@ -1,70 +1,111 @@
-import { FileText, Upload, X } from "lucide-react";
-import { useState } from "react";
+import { ArrowLeft, ArrowRight, FileText, Upload, X } from "lucide-react";
+import { useState, type ChangeEvent, type FormEvent } from "react";
 import { useNavigate } from "react-router-dom";
 import { courseApi, sourceDocumentApi } from "../api/services";
-import { ApiErrorMessage, BackLink, FieldError, PageHeader } from "../components/common";
+import { ApiErrorMessage, FieldError, PageHeader } from "../components/common";
+
+type SourceMode = "choose" | "pdf" | "text";
+const maxPdfBytes = Number(import.meta.env.VITE_MAX_PDF_BYTES ?? 10_485_760);
 
 export function CourseCreatePage() {
   const navigate = useNavigate();
   const [name, setName] = useState("");
+  const [sourceMode, setSourceMode] = useState<SourceMode>("choose");
   const [file, setFile] = useState<File | null>(null);
   const [sourceText, setSourceText] = useState("");
   const [fileError, setFileError] = useState<string | null>(null);
   const [error, setError] = useState<unknown>(null);
   const [loading, setLoading] = useState(false);
-  const [uploading, setUploading] = useState(false);
 
-  async function handleFile(event: React.ChangeEvent<HTMLInputElement>) {
+  function handleFile(event: ChangeEvent<HTMLInputElement>) {
     const nextFile = event.target.files?.[0] ?? null;
-    setFile(nextFile); setFileError(null); setSourceText("");
+    setFileError(null);
     if (!nextFile) return;
     if (nextFile.type !== "application/pdf" && !nextFile.name.toLowerCase().endsWith(".pdf")) {
       setFile(null);
       setFileError("Selecciona un archivo PDF.");
       return;
     }
-    const maxBytes = Number(import.meta.env.VITE_MAX_PDF_BYTES ?? 10_485_760);
-    if (nextFile.size > maxBytes) {
+    if (nextFile.size > maxPdfBytes) {
       setFile(null);
-      setFileError(`El PDF supera el límite de ${Math.round(maxBytes / 1_048_576)} MB.`);
+      setFileError("El PDF supera el límite de " + Math.round(maxPdfBytes / 1_048_576) + " MB.");
+      return;
     }
+    setFile(nextFile);
   }
 
-  async function submit(event: React.FormEvent<HTMLFormElement>) {
-    event.preventDefault(); setError(null);
+  async function submit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setError(null);
     const cleanName = name.trim();
     const cleanText = sourceText.trim();
     if (cleanName.length < 3) { setError(new Error("El nombre debe tener al menos 3 caracteres.")); return; }
-    if (!file && !cleanText) { setError(new Error("Carga un PDF o pega el contenido del curso.")); return; }
-    if (file && cleanText) { setError(new Error("Usa el PDF o el texto pegado, no ambos a la vez.")); return; }
+    if (sourceMode === "pdf" && !file) { setError(new Error("Selecciona el PDF del programa.")); return; }
+    if (sourceMode === "text" && !cleanText) { setError(new Error("Pega el contenido del programa.")); return; }
     if (cleanText.length > 200_000) { setError(new Error("El texto supera el límite de 200.000 caracteres.")); return; }
-    setLoading(true); setUploading(Boolean(file));
+    setLoading(true);
     try {
-      let course;
-      if (file) {
-        const document = await sourceDocumentApi.uploadFile(file);
-        course = await courseApi.create({ name: cleanName, source_document_id: document.id });
-      } else {
-        course = await courseApi.create({ name: cleanName, source_text: cleanText });
-      }
-      navigate(`/app/courses/${course.id}`);
+      const document = sourceMode === "pdf" && file ? await sourceDocumentApi.uploadFile(file) : null;
+      const course = await courseApi.create({
+        name: cleanName,
+        source_document_id: document?.id ?? null,
+        source_text: sourceMode === "text" ? cleanText : null,
+      });
+      navigate("/app/courses/" + course.id + "?review=1");
     } catch (submitError) {
       setError(submitError);
     } finally {
-      setLoading(false); setUploading(false);
+      setLoading(false);
     }
   }
 
   return (
-    <div className="content-narrow content-narrow--form">
-      <BackLink to="/app">Volver al inicio</BackLink>
-      <PageHeader eyebrow="Nuevo curso" title="Carga el contexto de tu curso" description="Usaremos el contenido para ayudarte a identificar objetivos y contenidos evaluables." />
-      <form className="form-card form-stack" onSubmit={submit} noValidate>
+    <div className="content-narrow content-narrow--form course-create-page">
+      <button className="text-back" type="button" onClick={() => sourceMode === "choose" ? navigate("/app") : setSourceMode("choose")}><ArrowLeft size={16} aria-hidden="true" /> Volver</button>
+      <PageHeader title={sourceMode === "choose" ? "Crear curso" : sourceMode === "pdf" ? "Subir el programa" : "Pegar contenido"} description={sourceMode === "choose" ? "Organiza los objetivos y contenidos de un curso." : sourceMode === "pdf" ? "Selecciona el programa desde tu equipo." : "Pega el programa del curso para organizar unidades y objetivos."} />
+      <div className="stepper" aria-label="Paso 1 de 2">
+        <div className="stepper__item stepper__item--active"><span>1</span><strong>Curso</strong></div>
+        <div className="stepper__line" />
+        <div className="stepper__item"><span>2</span><strong>Revisión</strong></div>
+      </div>
+      <form className="form-card course-create-card" onSubmit={submit} noValidate>
         {error ? <div className="alert alert--error" role="alert"><ApiErrorMessage error={error} /></div> : null}
-        <label className="field"><span>Nombre del curso</span><input required minLength={3} maxLength={100} value={name} onChange={(event) => setName(event.target.value)} placeholder="Lenguaje 8° básico" /><small>Entre 3 y 100 caracteres.</small></label>
-        <div className="field"><span>Material de referencia</span><label className={`file-drop ${file ? "file-drop--selected" : ""}`}><input type="file" accept="application/pdf,.pdf" onChange={handleFile} /><Upload size={21} aria-hidden="true" /><strong>{file ? file.name : "Selecciona un PDF"}</strong><small>{file ? `${Math.round(file.size / 1024)} KB · ${uploading ? "guardando y procesando…" : "listo para subir"}` : "Hasta 10 MB · se guarda en almacenamiento privado"}</small></label>{fileError && <FieldError message={fileError} />}{file && <button className="file-clear" type="button" onClick={() => { setFile(null); setSourceText(""); }}><X size={14} aria-hidden="true" /> Quitar archivo</button>}</div>
-        <label className="field"><span>Texto del curso (alternativa al PDF)</span><textarea rows={11} value={sourceText} onChange={(event) => { setSourceText(event.target.value); if (event.target.value) setFile(null); }} placeholder="Pega aquí el programa, objetivos o contenidos del curso." /><small>{sourceText.length.toLocaleString("es-CL")} / 200.000 caracteres</small></label>
-        <div className="form-actions"><button className="button button--secondary" type="button" onClick={() => navigate("/app")}>Cancelar</button><button className="button button--primary" type="submit" disabled={loading}><FileText size={17} aria-hidden="true" />{loading ? "Creando…" : "Crear curso"}</button></div>
+        <label className="field">
+          <span>Nombre del curso</span>
+          <input required minLength={3} maxLength={100} value={name} onChange={(event) => setName(event.target.value)} placeholder="Ej. Biología · 2° medio" />
+          <small>Entre 3 y 100 caracteres.</small>
+        </label>
+        {sourceMode === "choose" ? (
+          <fieldset className="source-fieldset">
+            <legend>FUENTE DEL PROGRAMA</legend>
+            <div className="source-choice-grid">
+              <button className="source-choice" type="button" onClick={() => setSourceMode("pdf")}><span className="source-choice__icon"><Upload size={20} /></span><strong>Subir un PDF</strong><small>Selecciona el programa desde tu equipo.</small><ArrowRight size={16} /></button>
+              <button className="source-choice" type="button" onClick={() => setSourceMode("text")}><span className="source-choice__icon"><FileText size={20} /></span><strong>Pegar texto</strong><small>Usa contenido copiado del programa.</small><ArrowRight size={16} /></button>
+            </div>
+          </fieldset>
+        ) : sourceMode === "pdf" ? (
+          <div className="field">
+            <span>Documento del programa</span>
+            <label className={file ? "file-drop file-drop--selected" : "file-drop"}>
+              <input type="file" accept="application/pdf,.pdf" onChange={handleFile} />
+              <Upload size={22} aria-hidden="true" />
+              <strong>{file?.name ?? "Selecciona un archivo PDF"}</strong>
+              <small>{file ? Math.round(file.size / 1024) + " KB · listo para continuar" : "PDF · hasta 10 MB"}</small>
+            </label>
+            {fileError ? <FieldError message={fileError} /> : null}
+            {file ? <button className="file-clear" type="button" onClick={() => setFile(null)}><X size={14} /> Quitar archivo</button> : null}
+          </div>
+        ) : (
+          <label className="field">
+            <span>Texto del programa</span>
+            <textarea rows={9} maxLength={200_000} value={sourceText} onChange={(event) => setSourceText(event.target.value)} placeholder="Pega aquí el contenido del programa…" />
+            <small>{sourceText.length.toLocaleString("es-CL")} / 200.000 caracteres. Los títulos y objetivos podrán revisarse en el paso siguiente.</small>
+          </label>
+        )}
+        <div className="form-actions">
+          <button className="button button--secondary" type="button" onClick={() => navigate("/app")}>Cancelar</button>
+          {sourceMode !== "choose" ? <button className="button button--primary" type="submit" disabled={loading}>{loading ? "Organizando…" : "Continuar"} <ArrowRight size={16} aria-hidden="true" /></button> : null}
+        </div>
       </form>
     </div>
   );

@@ -1,6 +1,6 @@
-import { ArrowDown, ArrowUp, BookOpen, Download, Edit3, FilePlus2, Plus, Save, Trash2, X } from "lucide-react";
+import { ArrowDown, ArrowRight, ArrowUp, BookOpen, Download, Edit3, FilePlus2, Plus, Save, Trash2, X } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
-import { Link, useNavigate, useParams } from "react-router-dom";
+import { Link, useNavigate, useParams, useSearchParams } from "react-router-dom";
 import type { components } from "../api/generated";
 import { courseApi, evaluationApi, sourceDocumentApi } from "../api/services";
 import { ApiErrorMessage, BackLink, EmptyState, ErrorState, LoadingState, PageHeader } from "../components/common";
@@ -13,6 +13,8 @@ type ContentDraft = components["schemas"]["ContentInput"];
 
 export function CourseDetailPage() {
   const { courseId = "" } = useParams();
+  const [searchParams] = useSearchParams();
+  const reviewMode = searchParams.get("review") === "1";
   const navigate = useNavigate();
   const [course, setCourse] = useState<Course | null>(null);
   const [evaluations, setEvaluations] = useState<Evaluation[]>([]);
@@ -96,16 +98,25 @@ export function CourseDetailPage() {
 
   return (
     <div className="content-narrow">
-      <BackLink to="/app" />
-      <PageHeader eyebrow="Curso" title={course.name} description={`Actualizado ${formatDate(course.updated_at)}`} actions={<><Link className="button button--primary" to={`/app/courses/${course.id}/evaluations/new`}><FilePlus2 size={17} aria-hidden="true" /> Nueva evaluación</Link><button className="button button--quiet" type="button" onClick={archiveCourse}><Trash2 size={16} aria-hidden="true" /> Archivar</button></>} />
+      <BackLink to="/app/courses">Volver a cursos</BackLink>
+      <PageHeader
+        eyebrow={reviewMode ? "PASO 2 DE 2 · REVISIÓN DEL CURSO" : "Curso"}
+        title={reviewMode ? "Revisa el contenido" : course.name}
+        description={reviewMode ? "Confirma unidades, objetivos y contenidos antes de crear tu primera evaluación." : `Actualizado ${formatDate(course.updated_at)}`}
+        actions={!reviewMode ? <>
+          <Link className="button button--primary" to={`/app/courses/${course.id}/evaluations/new`}><FilePlus2 size={17} aria-hidden="true" /> Nueva evaluación <ArrowRight size={16} aria-hidden="true" /></Link>
+          <button className="button button--quiet" type="button" onClick={archiveCourse}><Trash2 size={16} aria-hidden="true" /> Archivar</button>
+        </> : undefined}
+      />
+      {reviewMode ? <div className="review-banner"><span className="review-banner__step">2</span><span><strong>Tu curso ya está organizado</strong><small>Revisa los elementos detectados. Puedes ajustar objetivos y contenidos antes de avanzar.</small></span></div> : null}
       {actionError ? <ErrorState message={<ApiErrorMessage error={actionError} />} /> : null}
-      <section className="form-card course-name-form"><form onSubmit={renameCourse}><label className="field"><span>Nombre del curso</span><input value={courseName} onChange={(event) => setCourseName(event.target.value)} maxLength={100} /></label><button className="button button--secondary" type="submit" disabled={renaming}>{renaming ? "Guardando…" : "Renombrar"}</button></form></section>
-      {course.source_document && <section className="form-card source-document-card"><div><p className="eyebrow">Material de referencia</p><h2>{course.source_document.original_filename}</h2><p className="muted">PDF validado y guardado de forma privada.</p></div><button className="button button--secondary" type="button" onClick={downloadSourceDocument} disabled={downloading}><Download size={16} aria-hidden="true" /> {downloading ? "Preparando…" : "Abrir PDF"}</button></section>}
+      {!reviewMode ? <section className="form-card course-name-form"><form onSubmit={renameCourse}><label className="field"><span>Nombre del curso</span><input value={courseName} onChange={(event) => setCourseName(event.target.value)} maxLength={100} /></label><button className="button button--secondary" type="submit" disabled={renaming}>{renaming ? "Guardando…" : "Renombrar"}</button></form></section> : null}
+      {!reviewMode && course.source_document && <section className="form-card source-document-card"><div><p className="eyebrow">Material de referencia</p><h2>{course.source_document.original_filename}</h2><p className="muted">PDF validado y guardado de forma privada.</p></div><button className="button button--secondary" type="button" onClick={downloadSourceDocument} disabled={downloading}><Download size={16} aria-hidden="true" /> {downloading ? "Preparando…" : "Abrir PDF"}</button></section>}
       <section className="section-block section-block--tight">
-        <div className="section-heading"><div><p className="eyebrow">Contexto estructurado</p><h2>Objetivos y contenidos</h2></div>{!editingStructure && <button className="button button--secondary button--small" type="button" onClick={startEditing}><Edit3 size={15} aria-hidden="true" /> Editar estructura</button>}</div>
+        <div className="section-heading"><div><p className="eyebrow">{reviewMode ? "CONTENIDO DETECTADO" : "Contexto estructurado"}</p><h2>{reviewMode ? "Unidades, objetivos y contenidos" : "Objetivos y contenidos"}</h2></div>{!editingStructure && <button className="button button--secondary button--small" type="button" onClick={startEditing}><Edit3 size={15} aria-hidden="true" /> Editar estructura</button>}</div>
         {editingStructure ? <StructureEditor outcomes={outcomes} contents={contents} setOutcomes={setOutcomes} setContents={setContents} saving={saving} onCancel={() => setEditingStructure(false)} onSubmit={saveStructure} /> : <StructureView course={course} />}
       </section>
-      <section className="section-block section-block--tight"><div className="section-heading"><div><p className="eyebrow">Trabajo del curso</p><h2>Evaluaciones</h2></div>{evaluations.length > 0 && <span className="count-badge">{evaluations.length}</span>}</div>{evaluations.length === 0 ? <EmptyState title="Crea la primera evaluación" description="Selecciona objetivos y contenidos para iniciar una conversación sobre la rúbrica." action={<Link className="button button--secondary" to={`/app/courses/${course.id}/evaluations/new`}><Plus size={16} aria-hidden="true" /> Nueva evaluación</Link>} /> : <div className="evaluation-list">{evaluations.map((evaluation) => <Link className="evaluation-card" key={evaluation.id} to={`/app/evaluations/${evaluation.id}`}><div className="evaluation-card__icon"><BookOpen size={18} aria-hidden="true" /></div><div><h3>{evaluation.name}</h3><p>{evaluation.learning_outcomes.length} objetivos · {evaluation.contents.length} contenidos · {evaluation.achievement_levels.length} niveles</p><small>Actualizada {formatDate(evaluation.updated_at)}</small></div></Link>)}</div>}</section>
+      {!reviewMode ? <section className="section-block section-block--tight"><div className="section-heading"><div><p className="eyebrow">Trabajo del curso</p><h2>Evaluaciones</h2></div>{evaluations.length > 0 && <span className="count-badge">{evaluations.length}</span>}</div>{evaluations.length === 0 ? <EmptyState title="Crea la primera evaluación" description="Selecciona objetivos y contenidos para iniciar una conversación sobre la rúbrica." action={<Link className="button button--secondary" to={`/app/courses/${course.id}/evaluations/new`}><Plus size={16} aria-hidden="true" /> Nueva evaluación</Link>} /> : <div className="evaluation-list">{evaluations.map((evaluation) => <Link className="evaluation-card" key={evaluation.id} to={`/app/evaluations/${evaluation.id}`}><div className="evaluation-card__icon"><BookOpen size={18} aria-hidden="true" /></div><div><h3>{evaluation.name}</h3><p>{evaluation.learning_outcomes.length} objetivos · {evaluation.contents.length} contenidos · {evaluation.achievement_levels.length} niveles</p><small>Actualizada {formatDate(evaluation.updated_at)}</small></div></Link>)}</div>}</section> : <div className="review-bottom-action"><p>Cuando estés conforme, continúa y crea la primera evaluación de este curso.</p><Link className="button button--primary" to={`/app/courses/${course.id}/evaluations/new`}>Crear evaluación <ArrowRight size={16} aria-hidden="true" /></Link></div>}
     </div>
   );
 }

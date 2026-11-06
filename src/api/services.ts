@@ -31,6 +31,12 @@ export const authApi = {
   async me() {
     return apiRequest<components["schemas"]["UserRead"]>("/api/v1/auth/me");
   },
+  async updateProfile(input: components["schemas"]["UserProfileUpdate"]) {
+    return apiRequest<components["schemas"]["UserRead"]>(
+      "/api/v1/auth/me",
+      { method: "PATCH", body: JSON.stringify(input) },
+    );
+  },
   async logout() {
     const current = authStorage.read();
     try {
