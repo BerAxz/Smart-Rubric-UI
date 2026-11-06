@@ -50,7 +50,7 @@ export function EvaluationDetailPage() {
 
   if (loading) return <LoadingState label="Cargando evaluación…" />;
   if (error || !evaluation || !course) return <div className="content-narrow"><BackLink to="/app" />{error ? <ErrorState message={<ApiErrorMessage error={error} />} onRetry={() => void load()} /> : <ErrorState message="No encontramos esta evaluación." />}</div>;
-  if (editing) return <div className="content-narrow content-narrow--form"><BackLink to={`/app/courses/${course.id}`}>Volver al curso</BackLink><PageHeader eyebrow="Editar evaluación" title={evaluation.name} description="Actualiza el PDF o el contexto que se usará en las próximas respuestas." /><EvaluationForm course={course} initial={evaluation} loading={saving} submitLabel="Guardar cambios" onSubmit={update} onCancel={() => setEditing(false)} /></div>;
+  if (editing) return <div className="content-narrow content-narrow--form"><BackLink to={`/app/courses/${course.id}`}>Volver al curso</BackLink><EvaluationForm course={course} initial={evaluation} loading={saving} submitLabel="Guardar cambios" onSubmit={update} onCancel={() => setEditing(false)} /></div>;
   return (
     <div className="content-narrow">
       <BackLink to={`/app/courses/${course.id}`}>Volver al curso</BackLink>
@@ -73,7 +73,6 @@ export function EvaluationDetailPage() {
         <section className="detail-card"><p className="eyebrow">Contenidos</p><ul className="plain-list">{evaluation.contents.map((content) => <li key={content.id}><strong>{content.title}</strong>{content.description && <span>{content.description}</span>}</li>)}</ul></section>
         {evaluation.source_document && <section className="detail-card"><p className="eyebrow">Documento de evaluación</p><p><strong>{evaluation.source_document.original_filename}</strong></p><p className="muted">La IA analizará este PDF al generar y refinar la rúbrica desde el chat.</p></section>}
         {evaluation.task_context && <section className="detail-card"><p className="eyebrow">Contexto de la tarea</p><p>{evaluation.task_context}</p></section>}
-        {evaluation.additional_criteria && <section className="detail-card"><p className="eyebrow">Criterios adicionales</p><p>{evaluation.additional_criteria}</p></section>}
       </div>
       <Link className="next-step" to={`/app/evaluations/${evaluation.id}/chat`}><span><MessageSquareText size={20} aria-hidden="true" /><span><strong>Continúa en el chat</strong><small>Genera y refina una rúbrica con este contexto.</small></span></span><ArrowRight size={18} aria-hidden="true" /></Link>
     </div>

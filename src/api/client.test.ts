@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { apiRequest, authStorage } from "./client";
 
-const user = { id: "00000000-0000-0000-0000-000000000001", email: "docente@example.com", created_at: "2026-01-01T00:00:00Z" };
+const user = { id: "00000000-0000-0000-0000-000000000001", full_name: null, email: "docente@example.com", created_at: "2026-01-01T00:00:00Z" };
 
 describe("apiRequest", () => {
   beforeEach(() => {
