@@ -38,6 +38,13 @@ build independiente también funcione; `npm run generate:api` lo actualiza desde
 - La rúbrica se visualiza como un mensaje dentro del chat, sin panel de resultado separado, y se
   exporta desde esa misma conversación a Markdown, PDF y Excel.
 
+## Navegación y movimiento
+
+En escritorio, el control de la barra lateral alterna entre su vista completa y compacta; la
+preferencia se conserva en el navegador. En móviles se mantiene el menú lateral como panel
+desplegable. Las entradas de páginas y tarjetas usan transiciones breves, y respetan la preferencia
+del sistema `prefers-reduced-motion`.
+
 El cliente API centralizado (`src/api/client.ts`) agrega el bearer token, intenta una única renovación ante `401`, interpreta el contrato de error `{ error: { code, message, details } }` y limpia las credenciales cuando la sesión deja de ser válida.
 
 ## Verificaciones
