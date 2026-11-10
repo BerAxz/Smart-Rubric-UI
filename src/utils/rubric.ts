@@ -1,6 +1,12 @@
 import type { components } from "../api/generated";
 
-export type RubricPayload = components["schemas"]["RubricPayload"];
+export type RubricCriterionPayload = Omit<components["schemas"]["RubricCriterion"], "description"> & {
+  description?: string | null;
+};
+
+export type RubricPayload = Omit<components["schemas"]["RubricPayload"], "criteria"> & {
+  criteria: RubricCriterionPayload[];
+};
 
 const rubricColors = {
   headerGreen: "B3E5A1",
@@ -22,14 +28,43 @@ export function rubricScoreForLevel(criterion: RubricPayload["criteria"][number]
   return typeof score === "number" && Number.isFinite(score) && score >= 0 ? score : index;
 }
 
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+function isStringRecord(value: unknown): value is Record<string, string> {
+  return isRecord(value) && Object.values(value).every((item) => typeof item === "string");
+}
+
+function isNumberRecord(value: unknown): value is Record<string, number> {
+  return isRecord(value) && Object.values(value).every((item) => typeof item === "number" && Number.isFinite(item));
+}
+
+function isRubricCriterion(value: unknown): value is RubricCriterionPayload {
+  if (!isRecord(value)) return false;
+  const descriptionIsValid = value.description === undefined || value.description === null || typeof value.description === "string";
+  const scoresAreValid = value.scores === undefined || isNumberRecord(value.scores);
+  return typeof value.criterion === "string" &&
+    descriptionIsValid &&
+    isStringRecord(value.levels) &&
+    scoresAreValid;
+}
+
 export function isRubricPayload(value: unknown): value is RubricPayload {
-  if (!value || typeof value !== "object") return false;
-  const rubric = value as Record<string, unknown>;
-  return typeof rubric.title === "string" && Array.isArray(rubric.criteria) && rubric.criteria.every((criterion) => {
-    if (!criterion || typeof criterion !== "object") return false;
-    const item = criterion as Record<string, unknown>;
-    return typeof item.criterion === "string" && typeof item.description === "string" && typeof item.levels === "object" && item.levels !== null;
-  });
+  if (!isRecord(value) || typeof value.title !== "string" || !Array.isArray(value.criteria)) return false;
+  const instructionsAreValid = value.instructions === undefined || value.instructions === null || typeof value.instructions === "string";
+  const suggestionsAreValid = value.suggestions === undefined ||
+    (Array.isArray(value.suggestions) && value.suggestions.every((item) => typeof item === "string"));
+  return instructionsAreValid && suggestionsAreValid && value.criteria.every(isRubricCriterion);
+}
+
+export function rubricCriterionText(criterion: Pick<RubricCriterionPayload, "criterion" | "description">) {
+  const description = criterion.description?.trim();
+  return description ? `${criterion.criterion} — ${description}` : criterion.criterion;
+}
+
+function markdownCell(value: string) {
+  return value.replaceAll("|", "\\|").replace(/\r?\n/g, "<br>");
 }
 
 export function rubricToMarkdown(rubric: RubricPayload, evaluationName: string) {
@@ -39,13 +74,13 @@ export function rubricToMarkdown(rubric: RubricPayload, evaluationName: string) 
   lines.push(
     "## Criterios",
     "",
-    `| Criterio | Qué observar | ${levels.join(" | ")} |`,
-    "| --- | --- |" + levels.map(() => " --- |").join(""),
+    `| Criterio | ${levels.map(markdownCell).join(" | ")} |`,
+    "| --- |" + levels.map(() => " --- |").join(""),
   );
   for (const criterion of rubric.criteria) {
     lines.push(
-      `| ${criterion.criterion} | ${criterion.description} | ${levels.map((level) => criterion.levels[level] ?? "").join(" | ")} |`,
-      `| Puntaje |  | ${levels.map((level, index) => rubricScoreForLevel(criterion, level, index)).join(" | ")} |`,
+      `| ${markdownCell(rubricCriterionText(criterion))} | ${levels.map((level) => markdownCell(criterion.levels[level] ?? "")).join(" | ")} |`,
+      `| Puntaje | ${levels.map((level, index) => rubricScoreForLevel(criterion, level, index)).join(" | ")} |`,
     );
   }
   if (rubric.suggestions?.length) lines.push("", "## Sugerencias", "", ...rubric.suggestions.map((suggestion) => `- ${suggestion}`));
@@ -76,12 +111,12 @@ export async function downloadRubricPdf(rubric: RubricPayload, evaluationName: s
   if (rubric.instructions) document.text(rubric.instructions.slice(0, 180), 14, 34);
   const levels = rubric.criteria[0] ? Object.keys(rubric.criteria[0].levels) : [];
   const body = rubric.criteria.flatMap((criterion) => [
-    [criterion.criterion, criterion.description, ...levels.map((level) => criterion.levels[level] ?? "")],
-    ["Puntaje", "", ...levels.map((level, index) => rubricScoreForLevel(criterion, level, index))],
+    [rubricCriterionText(criterion), ...levels.map((level) => criterion.levels[level] ?? "")],
+    ["Puntaje", ...levels.map((level, index) => rubricScoreForLevel(criterion, level, index))],
   ]);
   autoTable(document, {
     startY: rubric.instructions ? 40 : 32,
-    head: [["Criterio", "Qué observar", ...levels]],
+    head: [["Criterio", ...levels]],
     body,
     styles: { fontSize: 7, cellPadding: 2, overflow: "linebreak", lineColor: [0, 0, 0], lineWidth: 0.1 },
     headStyles: { fillColor: [179, 229, 161], textColor: [0, 0, 0] },

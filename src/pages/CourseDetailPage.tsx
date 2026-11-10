@@ -1,4 +1,4 @@
-import { ArrowDown, ArrowRight, ArrowUp, BookOpen, Download, Edit3, FilePlus2, Plus, Save, Trash2, X } from "lucide-react";
+import { ArrowDown, ArrowRight, ArrowUp, BookOpen, ChevronDown, Download, Edit3, FilePlus2, Plus, Save, Trash2, X } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import { Link, useNavigate, useParams, useSearchParams } from "react-router-dom";
 import type { components } from "../api/generated";
@@ -122,54 +122,184 @@ export function CourseDetailPage() {
 }
 
 function StructureView({ course }: { course: Course }) {
-  if (course.units.length) {
-    const globalOutcomes = course.learning_outcomes.filter((item) => item.unit_id === null);
-    const globalContents = course.contents.filter((item) => item.unit_id === null);
-    return (
-      <>
-        {globalOutcomes.length || globalContents.length ? (
-          <article className="structure-panel structure-panel--global">
-            <h3>Información general del curso</h3>
-            {globalOutcomes.length ? <><p className="eyebrow">Objetivos generales ({globalOutcomes.length})</p><ol className="numbered-list">{globalOutcomes.map((outcome) => <li key={outcome.id}>{outcome.description}</li>)}</ol></> : null}
-            {globalContents.length ? <><p className="eyebrow">Contenidos generales ({globalContents.length})</p><ol className="numbered-list">{globalContents.map((content) => <li key={content.id}><strong>{content.title}</strong>{content.description && <span>{content.description}</span>}</li>)}</ol></> : null}
-          </article>
-        ) : null}
-        <div className="structure-grid">
-          {course.units.map((unit) => {
-            const unitOutcomes = course.learning_outcomes.filter((item) => item.unit_id === unit.id);
-            const unitContents = course.contents.filter((item) => item.unit_id === unit.id);
-            return (
-              <article className="structure-panel" key={unit.id}>
-                <h3>{unit.title}</h3>
-                {unit.description ? <p className="muted">{unit.description}</p> : null}
-                <p className="eyebrow">Objetivos de la unidad ({unitOutcomes.length})</p>
-                {unitOutcomes.length ? (
-                  <ol className="numbered-list">
-                    {unitOutcomes.map((outcome) => <li key={outcome.id}>{outcome.description}</li>)}
-                  </ol>
-                ) : <p className="muted">No hay objetivos específicos; se usarán los objetivos generales del curso.</p>}
-                <p className="eyebrow">Contenidos ({unitContents.length})</p>
-                {unitContents.length ? (
-                  <ol className="numbered-list">
-                    {unitContents.map((content) => (
-                      <li key={content.id}><strong>{content.title}</strong>{content.description && <span>{content.description}</span>}</li>
-                    ))}
-                  </ol>
-                ) : <p className="muted">No hay contenidos guardados.</p>}
-              </article>
-            );
-          })}
-        </div>
-      </>
-    );
-  }
-  return <div className="structure-grid"><div className="structure-panel"><h3>Objetivos de aprendizaje <span>{course.learning_outcomes.length}</span></h3>{course.learning_outcomes.length ? <ol className="numbered-list">{course.learning_outcomes.map((outcome) => <li key={outcome.id}>{outcome.description}</li>)}</ol> : <p className="muted">No hay objetivos guardados.</p>}</div><div className="structure-panel"><h3>Contenidos <span>{course.contents.length}</span></h3>{course.contents.length ? <ol className="numbered-list">{course.contents.map((content) => <li key={content.id}><strong>{content.title}</strong>{content.description && <span>{content.description}</span>}</li>)}</ol> : <p className="muted">No hay contenidos guardados.</p>}</div></div>;
+  const globalOutcomes = course.learning_outcomes.filter((item) => item.unit_id === null);
+  const globalContents = course.contents.filter((item) => item.unit_id === null);
+  const outcomeLabel = (count: number) => count + " " + (count === 1 ? "objetivo" : "objetivos");
+  const contentLabel = (count: number) => count + " " + (count === 1 ? "contenido" : "contenidos");
+  const hasUnits = course.units.length > 0;
+  const courseOutcomes = hasUnits ? globalOutcomes : course.learning_outcomes;
+  const courseContents = hasUnits ? globalContents : course.contents;
+
+  return (
+    <div className="structure-grid">
+      {hasUnits && (globalOutcomes.length > 0 || globalContents.length > 0) ? (
+        <details className="structure-panel structure-disclosure structure-disclosure--global">
+          <summary className="structure-disclosure__summary">
+            <span className="structure-disclosure__main">
+              <strong>Información general del curso</strong>
+              <small>Objetivos y contenidos compartidos entre unidades</small>
+            </span>
+            <span className="structure-disclosure__counts">
+              <span>{outcomeLabel(globalOutcomes.length)}</span>
+              <span>{contentLabel(globalContents.length)}</span>
+            </span>
+            <ChevronDown className="structure-disclosure__chevron" size={18} aria-hidden="true" />
+          </summary>
+          <div className="structure-disclosure__content">
+            {globalOutcomes.length > 0 ? (
+              <section className="structure-detail-group">
+                <h4>Objetivos generales</h4>
+                <ol className="numbered-list">{globalOutcomes.map((outcome) => <li key={outcome.id}>{outcome.description}</li>)}</ol>
+              </section>
+            ) : null}
+            {globalContents.length > 0 ? (
+              <section className="structure-detail-group">
+                <h4>Contenidos generales</h4>
+                <ol className="numbered-list">{globalContents.map((content) => <li key={content.id}><strong>{content.title}</strong>{content.description && <span>{content.description}</span>}</li>)}</ol>
+              </section>
+            ) : null}
+          </div>
+        </details>
+      ) : null}
+
+      {hasUnits ? course.units.map((unit) => {
+        const unitOutcomes = course.learning_outcomes.filter((item) => item.unit_id === unit.id);
+        const unitContents = course.contents.filter((item) => item.unit_id === unit.id);
+        return (
+          <details className="structure-panel structure-disclosure" key={unit.id}>
+            <summary className="structure-disclosure__summary">
+              <span className="structure-disclosure__main"><strong>{unit.title}</strong></span>
+              <span className="structure-disclosure__counts">
+                <span>{outcomeLabel(unitOutcomes.length)}</span>
+                <span>{contentLabel(unitContents.length)}</span>
+              </span>
+              <ChevronDown className="structure-disclosure__chevron" size={18} aria-hidden="true" />
+            </summary>
+            <div className="structure-disclosure__content">
+              {unit.description ? <p className="structure-unit-description">{unit.description}</p> : null}
+              <section className="structure-detail-group">
+                <h4>Objetivos de aprendizaje</h4>
+                {unitOutcomes.length > 0 ? (
+                  <ol className="numbered-list">{unitOutcomes.map((outcome) => <li key={outcome.id}>{outcome.description}</li>)}</ol>
+                ) : (
+                  <p className="structure-inline-note">
+                    {globalOutcomes.length > 0 ? "Se aplican los objetivos generales del curso." : "No hay objetivos específicos registrados para esta unidad."}
+                  </p>
+                )}
+              </section>
+              <section className="structure-detail-group">
+                <h4>Contenidos</h4>
+                {unitContents.length > 0 ? (
+                  <ol className="numbered-list">{unitContents.map((content) => <li key={content.id}><strong>{content.title}</strong>{content.description && <span>{content.description}</span>}</li>)}</ol>
+                ) : <p className="structure-inline-note">No hay contenidos guardados para esta unidad.</p>}
+              </section>
+            </div>
+          </details>
+        );
+      }) : (
+        <>
+          <details className="structure-panel structure-disclosure">
+            <summary className="structure-disclosure__summary">
+              <span className="structure-disclosure__main"><strong>Objetivos de aprendizaje</strong></span>
+              <span className="structure-disclosure__counts"><span>{outcomeLabel(courseOutcomes.length)}</span></span>
+              <ChevronDown className="structure-disclosure__chevron" size={18} aria-hidden="true" />
+            </summary>
+            <div className="structure-disclosure__content">
+              {courseOutcomes.length > 0 ? <ol className="numbered-list">{courseOutcomes.map((outcome) => <li key={outcome.id}>{outcome.description}</li>)}</ol> : <p className="structure-inline-note">No hay objetivos guardados.</p>}
+            </div>
+          </details>
+          <details className="structure-panel structure-disclosure">
+            <summary className="structure-disclosure__summary">
+              <span className="structure-disclosure__main"><strong>Contenidos</strong></span>
+              <span className="structure-disclosure__counts"><span>{contentLabel(courseContents.length)}</span></span>
+              <ChevronDown className="structure-disclosure__chevron" size={18} aria-hidden="true" />
+            </summary>
+            <div className="structure-disclosure__content">
+              {courseContents.length > 0 ? <ol className="numbered-list">{courseContents.map((content) => <li key={content.id}><strong>{content.title}</strong>{content.description && <span>{content.description}</span>}</li>)}</ol> : <p className="structure-inline-note">No hay contenidos guardados.</p>}
+            </div>
+          </details>
+        </>
+      )}
+    </div>
+  );
 }
 
 function StructureEditor({ outcomes, contents, setOutcomes, setContents, saving, onCancel, onSubmit }: { outcomes: OutcomeDraft[]; contents: ContentDraft[]; setOutcomes: React.Dispatch<React.SetStateAction<OutcomeDraft[]>>; setContents: React.Dispatch<React.SetStateAction<ContentDraft[]>>; saving: boolean; onCancel: () => void; onSubmit: (event: React.FormEvent<HTMLFormElement>) => void }) {
   function move<T>(items: T[], index: number, direction: -1 | 1, update: React.Dispatch<React.SetStateAction<T[]>>) {
-    const target = index + direction; if (target < 0 || target >= items.length) return;
-    const next = [...items]; [next[index], next[target]] = [next[target], next[index]]; update(next);
+    const target = index + direction;
+    if (target < 0 || target >= items.length) return;
+    const next = [...items];
+    [next[index], next[target]] = [next[target], next[index]];
+    update(next);
   }
-  return <form className="form-card form-stack" onSubmit={onSubmit}><div className="editor-column"><div className="editor-heading"><h3>Objetivos</h3><button className="button button--quiet button--small" type="button" onClick={() => setOutcomes((items) => [...items, { description: "" }])}><Plus size={15} aria-hidden="true" /> Agregar</button></div>{outcomes.map((outcome, index) => <div className="editor-row" key={outcome.id ?? `outcome-${index}`}><textarea rows={2} value={outcome.description} onChange={(event) => setOutcomes((items) => items.map((item, itemIndex) => itemIndex === index ? { ...item, description: event.target.value } : item))} aria-label={`Objetivo ${index + 1}`} /><div className="editor-row__actions"><button className="icon-button" type="button" aria-label="Subir objetivo" disabled={index === 0} onClick={() => move(outcomes, index, -1, setOutcomes)}><ArrowUp size={15} /></button><button className="icon-button" type="button" aria-label="Bajar objetivo" disabled={index === outcomes.length - 1} onClick={() => move(outcomes, index, 1, setOutcomes)}><ArrowDown size={15} /></button><button className="icon-button icon-button--danger" type="button" aria-label="Eliminar objetivo" onClick={() => setOutcomes((items) => items.filter((_, itemIndex) => itemIndex !== index))}><X size={15} /></button></div></div>)}</div><div className="editor-column"><div className="editor-heading"><h3>Contenidos</h3><button className="button button--quiet button--small" type="button" onClick={() => setContents((items) => [...items, { title: "", description: null }])}><Plus size={15} aria-hidden="true" /> Agregar</button></div>{contents.map((content, index) => <div className="editor-row editor-row--content" key={content.id ?? `content-${index}`}><input value={content.title} onChange={(event) => setContents((items) => items.map((item, itemIndex) => itemIndex === index ? { ...item, title: event.target.value } : item))} aria-label={`Título del contenido ${index + 1}`} placeholder="Título del contenido" /><textarea rows={2} value={content.description ?? ""} onChange={(event) => setContents((items) => items.map((item, itemIndex) => itemIndex === index ? { ...item, description: event.target.value } : item))} aria-label={`Descripción del contenido ${index + 1}`} placeholder="Descripción opcional" /><div className="editor-row__actions"><button className="icon-button" type="button" aria-label="Subir contenido" disabled={index === 0} onClick={() => move(contents, index, -1, setContents)}><ArrowUp size={15} /></button><button className="icon-button" type="button" aria-label="Bajar contenido" disabled={index === contents.length - 1} onClick={() => move(contents, index, 1, setContents)}><ArrowDown size={15} /></button><button className="icon-button icon-button--danger" type="button" aria-label="Eliminar contenido" onClick={() => setContents((items) => items.filter((_, itemIndex) => itemIndex !== index))}><X size={15} /></button></div></div>)}</div><div className="form-actions"><button className="button button--secondary" type="button" onClick={onCancel}><X size={16} aria-hidden="true" /> Cancelar</button><button className="button button--primary" type="submit" disabled={saving}><Save size={16} aria-hidden="true" /> {saving ? "Guardando…" : "Guardar estructura"}</button></div></form>;
+
+  return (
+    <form className="form-card form-stack structure-editor" onSubmit={onSubmit}>
+      <div className="editor-column">
+        <div className="editor-heading">
+          <h3>Objetivos</h3>
+          <button className="button button--quiet button--small" type="button" onClick={() => setOutcomes((items) => [...items, { description: "" }])}>
+            <Plus size={15} aria-hidden="true" /> Agregar
+          </button>
+        </div>
+        {outcomes.map((outcome, index) => (
+          <div className="editor-row editor-row--outcome" key={outcome.id ?? "outcome-" + index}>
+            <span className="editor-row__number" aria-hidden="true">{String(index + 1).padStart(2, "0")}</span>
+            <div className="editor-row__fields">
+              <textarea
+                rows={2}
+                value={outcome.description}
+                onChange={(event) => setOutcomes((items) => items.map((item, itemIndex) => itemIndex === index ? { ...item, description: event.target.value } : item))}
+                aria-label={"Objetivo " + (index + 1)}
+              />
+            </div>
+            <div className="editor-row__actions">
+              <button className="icon-button" type="button" aria-label={"Subir objetivo " + (index + 1)} disabled={index === 0} onClick={() => move(outcomes, index, -1, setOutcomes)}><ArrowUp size={15} aria-hidden="true" /></button>
+              <button className="icon-button" type="button" aria-label={"Bajar objetivo " + (index + 1)} disabled={index === outcomes.length - 1} onClick={() => move(outcomes, index, 1, setOutcomes)}><ArrowDown size={15} aria-hidden="true" /></button>
+              <button className="icon-button icon-button--danger" type="button" aria-label={"Eliminar objetivo " + (index + 1)} onClick={() => setOutcomes((items) => items.filter((_, itemIndex) => itemIndex !== index))}><X size={15} aria-hidden="true" /></button>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      <div className="editor-column">
+        <div className="editor-heading">
+          <h3>Contenidos</h3>
+          <button className="button button--quiet button--small" type="button" onClick={() => setContents((items) => [...items, { title: "", description: null }])}>
+            <Plus size={15} aria-hidden="true" /> Agregar
+          </button>
+        </div>
+        {contents.map((content, index) => (
+          <div className="editor-row editor-row--content" key={content.id ?? "content-" + index}>
+            <span className="editor-row__number" aria-hidden="true">{String(index + 1).padStart(2, "0")}</span>
+            <div className="editor-row__fields editor-row__fields--content">
+              <input
+                value={content.title}
+                onChange={(event) => setContents((items) => items.map((item, itemIndex) => itemIndex === index ? { ...item, title: event.target.value } : item))}
+                aria-label={"Título del contenido " + (index + 1)}
+                placeholder="Título del contenido"
+              />
+              <textarea
+                rows={2}
+                value={content.description ?? ""}
+                onChange={(event) => setContents((items) => items.map((item, itemIndex) => itemIndex === index ? { ...item, description: event.target.value } : item))}
+                aria-label={"Descripción del contenido " + (index + 1)}
+                placeholder="Descripción opcional"
+              />
+            </div>
+            <div className="editor-row__actions">
+              <button className="icon-button" type="button" aria-label={"Subir contenido " + (index + 1)} disabled={index === 0} onClick={() => move(contents, index, -1, setContents)}><ArrowUp size={15} aria-hidden="true" /></button>
+              <button className="icon-button" type="button" aria-label={"Bajar contenido " + (index + 1)} disabled={index === contents.length - 1} onClick={() => move(contents, index, 1, setContents)}><ArrowDown size={15} aria-hidden="true" /></button>
+              <button className="icon-button icon-button--danger" type="button" aria-label={"Eliminar contenido " + (index + 1)} onClick={() => setContents((items) => items.filter((_, itemIndex) => itemIndex !== index))}><X size={15} aria-hidden="true" /></button>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      <div className="form-actions">
+        <button className="button button--secondary" type="button" onClick={onCancel}><X size={16} aria-hidden="true" /> Cancelar</button>
+        <button className="button button--primary" type="submit" disabled={saving}><Save size={16} aria-hidden="true" /> {saving ? "Guardando…" : "Guardar estructura"}</button>
+      </div>
+    </form>
+  );
 }

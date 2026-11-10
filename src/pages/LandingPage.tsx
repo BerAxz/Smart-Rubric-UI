@@ -1,4 +1,4 @@
-import { ArrowRight, BookOpenCheck, Check, Grid2X2, ListChecks, Menu, Rows3, Sparkles, Target } from "lucide-react";
+import { ArrowRight, BookOpenCheck, Check, Download, FileText, Grid2X2, ListChecks, Menu, MessageSquareText, Rows3, Sparkles } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { useTheme } from "../theme/ThemeContext";
@@ -18,36 +18,48 @@ import mobileDotGreen from "../assets/figma/mobile-landing-dot-green.svg";
 
 const rubricStages = [
   {
-    icon: BookOpenCheck,
+    icon: FileText,
     number: "01",
-    title: "Parte desde tu contexto",
-    description: "Elige el curso y los objetivos que quieres evaluar. La rúbrica comienza con lo que ya enseñas.",
+    title: "Describe la evaluación",
+    description: "Cuenta qué harán tus estudiantes o adjunta la consigna en PDF para darle contexto a la rúbrica.",
   },
   {
-    icon: Target,
+    icon: BookOpenCheck,
     number: "02",
-    title: "Aterriza cada criterio",
-    description: "Convierte los objetivos en criterios observables, redactados para que todos sepan qué se espera.",
+    title: "Conéctala con tu curso",
+    description: "Elige la unidad, los objetivos de aprendizaje y los contenidos que quieres considerar.",
   },
   {
     icon: ListChecks,
     number: "03",
-    title: "Describe los niveles",
-    description: "Completa niveles de logro claros y graduales. Tú revisas cada propuesta y decides qué conservar.",
+    title: "Define los niveles de logro",
+    description: "Configura la escala y los puntajes que tienen sentido para esta evaluación.",
   },
   {
-    icon: Check,
+    icon: MessageSquareText,
     number: "04",
-    title: "Lista para revisar y compartir",
-    description: "Ajusta, guarda y exporta la matriz. El resultado sigue tus decisiones pedagógicas.",
+    title: "Revisa y ajusta en el chat",
+    description: "Conversa sobre los criterios, afina los descriptores y exporta la matriz cuando esté lista.",
   },
 ];
 
 const rubricRows = [
-  { title: "Comprensión de conceptos", description: "Explica relaciones entre los elementos.", level: "Logrado" },
-  { title: "Uso de evidencia", description: "Sustenta sus ideas con ejemplos del curso.", level: "En progreso" },
-  { title: "Comunicación científica", description: "Organiza y comunica sus conclusiones.", level: "Logrado" },
-  { title: "Propuesta de solución", description: "Propone acciones coherentes con el análisis.", level: "Por revisar" },
+  {
+    criterion: "Explica las interacciones",
+    descriptors: [
+      "Relaciona factores y anticipa sus efectos.",
+      "Describe relaciones con apoyo.",
+      "Nombra elementos sin relacionarlos.",
+    ],
+  },
+  {
+    criterion: "Usa evidencia científica",
+    descriptors: [
+      "Interpreta datos pertinentes.",
+      "Incluye ejemplos con explicación parcial.",
+      "Presenta ideas sin evidencia.",
+    ],
+  },
 ];
 
 function RubricBuildStory() {
@@ -84,9 +96,9 @@ function RubricBuildStory() {
   return (
     <section className="landing-process landing-build" id="how-it-works">
       <div className="landing-build__intro">
-        <p className="eyebrow">DE LA IDEA A UNA RÚBRICA CLARA</p>
-        <h2>La ves tomar forma<br />mientras avanzas.</h2>
-        <p>Un proceso guiado que parte por tus objetivos y termina en criterios que puedes revisar, ajustar y compartir.</p>
+        <p className="eyebrow">TU PROCESO, PASO A PASO</p>
+        <h2>Del contexto del curso<br />a una matriz útil.</h2>
+        <p>Smart Rubric reúne la actividad, los objetivos y los niveles de logro en una rúbrica que puedes revisar criterio por criterio.</p>
       </div>
       <div className="landing-build__layout">
         <div className="landing-build__steps">
@@ -110,41 +122,53 @@ function RubricBuildStory() {
             );
           })}
         </div>
-        <div className="landing-build__visual" data-stage={activeStage} aria-hidden="true">
+        <div className="landing-build__visual" data-stage={activeStage} role="img" aria-label="Ejemplo de una rúbrica de evaluación">
           <div className="landing-build__window">
             <div className="landing-build__chrome">
               <span><i /><i /><i /></span>
-              <small>SMART RUBRIC <b>/</b> NUEVA EVALUACIÓN</small>
+              <small>SMART RUBRIC <b>/</b> EVALUACIÓN</small>
               <Sparkles size={15} />
             </div>
             <div className="landing-build__document">
               <div className="landing-build__document-meta">
                 <span>BIOLOGÍA · 2° MEDIO</span>
-                <b>{activeStage === rubricStages.length - 1 ? "LISTA PARA REVISAR" : "EN CONSTRUCCIÓN"}</b>
+                <b>RÚBRICA DE EJEMPLO</b>
+              </div>
+              <div className="landing-build__stage">
+                <span>{rubricStages[activeStage].number}</span>
+                <small>{rubricStages[activeStage].title}</small>
               </div>
               <h3>Relaciones en el ecosistema</h3>
-              <p>Rúbrica de evaluación · Unidad 3</p>
+              <p>Evaluación · Unidad 3 · Ciencias naturales</p>
+              <div className="landing-build__context">
+                <span>OBJETIVOS Y CONTENIDOS</span>
+                <small>Interacciones · equilibrio del ecosistema</small>
+              </div>
               <div className="landing-build__progress-track"><span /></div>
-              <div className="landing-build__table-head"><span>CRITERIO</span><span>NIVEL DE LOGRO</span></div>
+              <div className="landing-build__table-head">
+                <span>CRITERIO</span><span>AVANZADO<br />3 PTS</span><span>LOGRADO<br />2 PTS</span><span>INICIAL<br />1 PT</span>
+              </div>
               <div className="landing-build__rows">
-                {rubricRows.map((row, index) => {
-                  const visible = index <= activeStage;
-                  return (
-                    <div className={"landing-build__row" + (visible ? " is-visible" : "")} key={row.title}>
-                      <span className="landing-build__row-check"><Check size={13} /></span>
-                      <span className="landing-build__row-copy"><strong>{row.title}</strong><small>{row.description}</small></span>
-                      <b className={"landing-build__level landing-build__level--" + (index % 2 === 0 ? "ready" : "draft")}>{visible ? row.level : "Por definir"}</b>
-                    </div>
-                  );
-                })}
+                {rubricRows.map((row) => (
+                  <div className="landing-build__row" key={row.criterion}>
+                    <strong>{row.criterion}</strong>
+                    {row.descriptors.map((descriptor, index) => (
+                      <span className={"landing-build__descriptor landing-build__descriptor--" + index} key={descriptor}>{descriptor}</span>
+                    ))}
+                  </div>
+                ))}
+              </div>
+              <div className="landing-build__chat">
+                <div className="landing-build__chat-heading"><span className="landing-build__chat-icon"><Sparkles size={14} aria-hidden="true" /></span><span><strong>Ajuste en el chat</strong><small>Una conversación, una rúbrica que evoluciona</small></span></div>
+                <p>“Diferencia mejor el nivel logrado del inicial.”</p>
+                <span className="landing-build__chat-response"><Check size={12} aria-hidden="true" /> Descriptor actualizado</span>
               </div>
               <div className="landing-build__document-foot">
-                <span><i /> Cambios guardados</span>
-                <small>{String(activeStage + 1).padStart(2, "0")} de 04 pasos</small>
+                <span><i /> Criterios, descriptores y puntajes</span>
+                <div className="landing-build__exports"><b>XLSX</b><b>PDF</b><b>MD</b></div>
               </div>
             </div>
           </div>
-          <span className="landing-build__float-tag"><Check size={14} /> Tu criterio, siempre al centro</span>
         </div>
       </div>
     </section>
@@ -175,37 +199,44 @@ export function LandingPage() {
       <div className="landing-container">
         <section className="landing-hero" id="for-teachers">
           <div className="landing-hero__copy">
-            <span className="landing-kicker">HECHO PARA DOCENTES</span>
-            <h1>Evalúa con claridad.<br />Mantén tu criterio.</h1>
-            <p>Organiza tus cursos, define criterios de evaluación y prepara rúbricas con apoyo de IA. Todo en un espacio pensado para tu trabajo docente.</p>
+            <span className="landing-kicker">RÚBRICAS CON TU CONTEXTO</span>
+            <h1>De tu curso<br />a rúbricas claras.</h1>
+            <p>Organiza cursos y unidades, conecta objetivos de aprendizaje y crea rúbricas que puedes revisar y ajustar en conversación.</p>
             <div className="landing-hero__actions"><Link className="button button--primary" to="/register">Crear cuenta</Link><a className="button button--secondary" href="#features">Conocer funciones</a></div>
-            <small className="landing-hero__note">Tus criterios siguen siendo el punto de partida.</small>
+            <small className="landing-hero__note">La IA propone. Tú decides qué queda en la rúbrica.</small>
           </div>
-          <div className="product-preview" aria-label="Vista previa de Smart Rubric">
+          <div className="product-preview" role="img" aria-label="Vista previa de una rúbrica con niveles de logro, puntajes y ajustes por chat">
             <div className="product-preview__bar"><span className="product-preview__dots"><img src={dotRed} alt="" /><img src={dotYellow} alt="" /><img src={dotGreen} alt="" /></span><small>smart rubric / espacio de trabajo</small></div>
             <div className="product-preview__body">
               <aside className="product-preview__sidebar"><div className="product-preview__brand"><img src={previewBrand} alt="" /><strong>Smart Rubric</strong></div><small>CURSOS</small><span className="product-preview__active">Biología</span><span>Historia</span><span>Lenguaje</span><small>CHATS</small><span>Ecosistemas</span></aside>
-              <div className="product-preview__main"><small className="product-preview__eyebrow">BIOLOGÍA · 2° MEDIO</small><h2>Evaluación: Ecosistemas</h2><p>Criterios de evaluación</p>
-                <div className="preview-rubric"><div className="preview-rubric__head"><span>Criterio</span><span>Nivel</span></div><div className="preview-rubric__row"><span>Comprende los conceptos</span><b>Logrado</b></div><div className="preview-rubric__row"><span>Relaciona ideas y ejemplos</span><b>En progreso</b></div></div>
-                <div className="preview-assistant"><img src={assistantBrand} alt="" /><span><strong>¿Necesitas ajustar un criterio?</strong><small>Consulta al asistente sin salir de tu curso.</small></span></div>
+              <div className="product-preview__main">
+                <div className="product-preview__topline"><small className="product-preview__eyebrow">BIOLOGÍA · 2° MEDIO</small><span><Download size={11} aria-hidden="true" /> XLSX</span></div>
+                <h2>Relaciones en el ecosistema</h2><p>Evaluación · Unidad 3 · Ciencias naturales</p>
+                <div className="preview-context"><small>OBJETIVOS Y CONTENIDOS</small><span>Interacciones · equilibrio del ecosistema</span></div>
+                <div className="preview-rubric">
+                  <div className="preview-rubric__head"><span>Criterio</span><span>Avanzado<br />3 pts</span><span>Logrado<br />2 pts</span><span>Inicial<br />1 pt</span></div>
+                  <div className="preview-rubric__row"><strong>Explica las interacciones</strong><span>Relaciona factores y anticipa efectos.</span><span>Describe relaciones con apoyo.</span><span>Nombra elementos sin relacionarlos.</span></div>
+                  <div className="preview-rubric__row"><strong>Usa evidencia científica</strong><span>Interpreta datos pertinentes.</span><span>Incluye ejemplos parciales.</span><span>Presenta ideas sin evidencia.</span></div>
+                </div>
+                <div className="preview-assistant"><img src={assistantBrand} alt="" /><span><small>AJUSTE EN EL CHAT</small><strong>“Haz más observable este criterio.”</strong><small>El descriptor se actualiza en la rúbrica.</small></span><Check size={14} aria-hidden="true" /></div>
               </div>
             </div>
           </div>
-          <div className="product-preview-mobile" aria-label="Vista previa de una evaluación">
+          <div className="product-preview-mobile" role="img" aria-label="Vista de una rúbrica con niveles de logro y ajustes por chat">
             <div className="product-preview-mobile__bar"><span><img src={mobileDotRed} alt="" /><img src={mobileDotYellow} alt="" /><img src={mobileDotGreen} alt="" /></span><small>smart rubric / evaluación</small></div>
-            <div className="product-preview-mobile__body"><div className="product-preview-mobile__brand"><img src={mobileLogo} alt="" /><span>BIOLOGÍA</span></div><h2>Ecosistemas</h2><div className="mobile-preview-rubric"><strong>Criterios de evaluación</strong><div><span>Comprensión</span><b>✓</b></div><div><span>Relación de ideas</span><b>~</b></div><div><span>Ejemplos</span><b>✓</b></div></div><div className="mobile-preview-assistant"><img src={mobileLogo} alt="" /><span><strong>Asistente</strong><small>Revisa y ajusta criterios.</small></span></div></div>
+            <div className="product-preview-mobile__body"><div className="product-preview-mobile__brand"><img src={mobileLogo} alt="" /><span>BIOLOGÍA · UNIDAD 3</span></div><h2>Relaciones en el ecosistema</h2><div className="mobile-preview-rubric"><strong>CRITERIO · NIVELES DE LOGRO</strong><div><span>Explica las interacciones</span><b>Avanzado · 3 pts</b></div><div><span>Usa evidencia científica</span><b>Logrado · 2 pts</b></div></div><div className="mobile-preview-assistant"><img src={mobileLogo} alt="" /><span><strong>Ajusta la rúbrica en el chat</strong><small>Criterios, descriptores y puntajes.</small></span></div></div>
           </div>
         </section>
         <section className="landing-features" id="features">
-          <div className="landing-section-heading"><p className="eyebrow">UN ESPACIO, TODO TU PROCESO</p><h2>Desde la planificación hasta la rúbrica.</h2><p>Herramientas claras para organizar el trabajo, sin añadir complejidad.</p></div>
+          <div className="landing-section-heading"><p className="eyebrow">UN FLUJO PENSADO PARA RÚBRICAS</p><h2>Del curso a una evaluación revisable.</h2><p>El contexto que ya tienes se convierte en criterios claros, niveles de logro y puntajes.</p></div>
           <div className="landing-feature-grid">
-            <article className="landing-feature-card"><span><Grid2X2 size={22} aria-hidden="true" /></span><h3>Cursos organizados</h3><p>Mantén objetivos, contenidos y evaluaciones juntos, en un mismo lugar.</p></article>
-            <article className="landing-feature-card"><span><Rows3 size={22} aria-hidden="true" /></span><h3>Contexto para cada evaluación</h3><p>Adjunta un PDF o describe lo que vas a evaluar para partir con la información correcta.</p></article>
-            <article className="landing-feature-card"><span><Check size={22} aria-hidden="true" /></span><h3>Asistencia con criterio</h3><p>Explora propuestas y ajusta cada rúbrica de acuerdo con tu enfoque pedagógico.</p></article>
+            <article className="landing-feature-card"><span><Grid2X2 size={22} aria-hidden="true" /></span><h3>Curso, unidad y objetivos</h3><p>Organiza objetivos de aprendizaje y contenidos para mantener el contexto de cada evaluación.</p></article>
+            <article className="landing-feature-card"><span><Rows3 size={22} aria-hidden="true" /></span><h3>Contexto para cada rúbrica</h3><p>Describe la actividad o adjunta sus instrucciones en PDF. Elige la unidad, los objetivos y los contenidos a evaluar.</p></article>
+            <article className="landing-feature-card"><span><MessageSquareText size={22} aria-hidden="true" /></span><h3>Una matriz que puedes ajustar</h3><p>Revisa criterios, descriptores y puntajes en el chat. Descarga la rúbrica en Excel, PDF o Markdown.</p></article>
           </div>
         </section>
         <RubricBuildStory />
-        <section className="landing-bottom-cta"><div><h2>Tu próximo curso, más organizado.</h2><p>Empieza con tus propios criterios y contenidos.</p></div><Link className="button button--primary" to="/register">Crear cuenta <ArrowRight size={16} aria-hidden="true" /></Link></section>
+        <section className="landing-bottom-cta"><div><h2>Una rúbrica clara empieza con tu curso.</h2><p>Organiza el contexto y ajusta cada criterio a tu manera de enseñar.</p></div><Link className="button button--primary" to="/register">Crear cuenta <ArrowRight size={16} aria-hidden="true" /></Link></section>
         <footer className="landing-footer"><strong>Smart Rubric</strong><span>Herramientas para docentes, con criterio humano.</span></footer>
       </div>
     </main>

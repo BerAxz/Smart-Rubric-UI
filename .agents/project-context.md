@@ -14,11 +14,16 @@
 - La navegación de `/app` usa un sidebar de escritorio y un drawer móvil. `/app/courses`,
   `/app/chats` y `/app/settings` son rutas de biblioteca y preferencias; el tema claro/oscuro se
   persiste localmente desde `ThemeContext`.
-- `ChatPage` es deliberadamente una sola conversación: la rúbrica estructurada aparece en el hilo,
-  muestra puntajes debajo de cada criterio y sus exportaciones parten de esa respuesta.
+- `ChatPage` es deliberadamente una sola conversación: la rúbrica estructurada aparece en el hilo
+  con una columna de criterio y columnas para los niveles de logro. Las descripciones de criterios
+  heredadas se muestran debajo del nombre del criterio; las rúbricas nuevas pueden omitirlas. El
+  historial usa el scroll natural de la página, el compositor permanece fijo al borde inferior con
+  espacio reservado para que no oculte el final, y solo se sigue una respuesta nueva si el usuario
+  estaba al final; cargar una conversación no fuerza el desplazamiento.
 - `src/utils/rubric.ts` exporta Markdown, PDF y Excel en el navegador. Excel replica la matriz de
   `Rubrica esperada.pdf`: encabezado verde, criterios amarillos, filas de puntaje y conversión de
-  puntaje a nota con exigencia del 60 %.
+  puntaje a nota con exigencia del 60 %. Las exportaciones de rúbricas usan el criterio y sus niveles
+  directamente, sin una columna separada de «Qué observar».
 
 ## Contratos importantes
 

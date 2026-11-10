@@ -19,7 +19,12 @@ type Message = components["schemas"]["ChatMessageRead"];
 
 const firstPrompt = "Analiza la evaluación adjunta en PDF o descrita, y alinéala con la unidad seleccionada, sus objetivos, contenidos y niveles de logro. Genera una primera versión en español con criterios observables y adecuados a la tarea; usa los objetivos como guía, no como criterios literales. Después podré pedirte que cambies o elimines cualquier parte.";
 
-function RubricInChat({
+function isNearPageBottom() {
+  const pageHeight = Math.max(document.body.scrollHeight, document.documentElement.scrollHeight);
+  return window.scrollY + window.innerHeight >= pageHeight - 160;
+}
+
+export function RubricInChat({
   rubric,
   evaluationName,
   summary,
@@ -35,7 +40,7 @@ function RubricInChat({
   onExport: (type: "markdown" | "pdf" | "excel") => void;
 }) {
   const levels = rubric.criteria[0] ? Object.keys(rubric.criteria[0].levels) : [];
-  const levelColumnWidth = `${64 / Math.max(levels.length, 1)}%`;
+  const levelColumnWidth = `${78 / Math.max(levels.length, 1)}%`;
   return (
     <div className="rubric-chat-card">
       <div className="rubric-chat-card__header">
@@ -55,23 +60,25 @@ function RubricInChat({
       <div className="rubric-table-wrap">
         <table className="rubric-table">
           <colgroup>
-            <col style={{ width: "16%" }} />
-            <col style={{ width: "20%" }} />
+            <col style={{ width: "22%" }} />
             {levels.map((level) => <col key={level} style={{ width: levelColumnWidth }} />)}
           </colgroup>
           <thead>
             <tr>
               <th scope="col">Criterio</th>
-              <th scope="col">Qué observar</th>
               {levels.map((level) => <th scope="col" key={level}>{level}</th>)}
             </tr>
           </thead>
           <tbody>
-            {rubric.criteria.map((criterion) => (
-              <Fragment key={`${criterion.criterion}-${criterion.description}`}>
+            {rubric.criteria.map((criterion, criterionIndex) => (
+              <Fragment key={`${criterion.criterion}-${criterionIndex}`}>
                 <tr>
-                  <th scope="row">{criterion.criterion}</th>
-                  <td>{criterion.description}</td>
+                  <th scope="row">
+                    <span>{criterion.criterion}</span>
+                    {criterion.description?.trim() ? (
+                      <span className="rubric-table__criterion-description">{criterion.description}</span>
+                    ) : null}
+                  </th>
                   {levels.map((level, levelIndex) => (
                     <td data-level={level} key={level}>
                       {criterion.levels[level] ?? ""}
@@ -82,7 +89,7 @@ function RubricInChat({
                   ))}
                 </tr>
                 <tr className="rubric-table__score-row">
-                  <th scope="row" colSpan={2}>Puntaje</th>
+                  <th scope="row">Puntaje</th>
                   {levels.map((level, levelIndex) => (
                     <td key={level}>{rubricScoreForLevel(criterion, level, levelIndex)}</td>
                   ))}
@@ -125,7 +132,7 @@ export function ChatPage() {
   const [sending, setSending] = useState(false);
   const [error, setError] = useState<unknown>(null);
   const [exporting, setExporting] = useState<string | null>(null);
-  const endRef = useRef<HTMLDivElement>(null);
+  const shouldFollowEndRef = useRef(false);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -142,7 +149,20 @@ export function ChatPage() {
   }, [evaluationId]);
 
   useEffect(() => { void load(); }, [load]);
-  useEffect(() => { endRef.current?.scrollIntoView({ behavior: "smooth", block: "nearest" }); }, [messages, sending]);
+  useEffect(() => {
+    const stopFollowingWhenReadingHistory = () => {
+      if (shouldFollowEndRef.current && !isNearPageBottom()) shouldFollowEndRef.current = false;
+    };
+    window.addEventListener("scroll", stopFollowingWhenReadingHistory, { passive: true });
+    return () => window.removeEventListener("scroll", stopFollowingWhenReadingHistory);
+  }, []);
+  useEffect(() => {
+    if (!shouldFollowEndRef.current || messages.length === 0) return;
+    shouldFollowEndRef.current = false;
+    window.requestAnimationFrame(() => {
+      window.scrollTo({ top: document.documentElement.scrollHeight, behavior: "smooth" });
+    });
+  }, [messages]);
 
   const latestRubricMessage = useMemo(
     () => [...messages].reverse().find((message) => message.role === "assistant" && isRubricPayload(message.structured_payload)),
@@ -165,6 +185,7 @@ export function ChatPage() {
   async function send(message = draft) {
     const cleanMessage = message.trim();
     if (!cleanMessage || sending) return;
+    shouldFollowEndRef.current = !hasMessages || isNearPageBottom();
     setSending(true);
     setError(null);
     setDraft("");
@@ -172,6 +193,7 @@ export function ChatPage() {
       const response = await chatApi.send(evaluationId, { message: cleanMessage });
       setMessages((items) => [...items, response.user_message, response.assistant_message]);
     } catch (sendError) {
+      shouldFollowEndRef.current = false;
       setError(sendError);
       setDraft(message);
     } finally {
@@ -267,35 +289,36 @@ export function ChatPage() {
               <div className="typing"><LoaderCircle className="spin" size={17} aria-hidden="true" /> Generando una respuesta…</div>
             </article>
           ) : null}
-          <div ref={endRef} />
         </div>
 
         {error ? <ErrorState message={<ApiErrorMessage error={error} />} /> : null}
         {!hasMessages && !sending ? <p className="chat-hint">También puedes escribir una instrucción concreta abajo.</p> : null}
-        <form
-          className="chat-composer"
-          onSubmit={(event) => { event.preventDefault(); void send(); }}
-        >
-          <label htmlFor="chat-message" className="sr-only">Mensaje para la conversación</label>
-          <textarea
-            id="chat-message"
-            rows={3}
-            value={draft}
-            onChange={(event) => setDraft(event.target.value)}
-            onKeyDown={(event) => {
-              if (event.key === "Enter" && !event.shiftKey) {
-                event.preventDefault();
-                void send();
-              }
-            }}
-            placeholder="Pide un ajuste, una sugerencia o una nueva versión…"
-            disabled={sending}
-          />
-          <button className="button button--primary" type="submit" disabled={sending || !draft.trim()}>
-            <Send size={17} aria-hidden="true" /> Enviar
-          </button>
-          <small>Enter para enviar · Shift + Enter para una nueva línea</small>
-        </form>
+        <div className="chat-composer-dock">
+          <form
+            className="chat-composer"
+            onSubmit={(event) => { event.preventDefault(); void send(); }}
+          >
+            <label htmlFor="chat-message" className="sr-only">Mensaje para la conversación</label>
+            <textarea
+              id="chat-message"
+              rows={3}
+              value={draft}
+              onChange={(event) => setDraft(event.target.value)}
+              onKeyDown={(event) => {
+                if (event.key === "Enter" && !event.shiftKey) {
+                  event.preventDefault();
+                  void send();
+                }
+              }}
+              placeholder="Pide un ajuste, una sugerencia o una nueva versión…"
+              disabled={sending}
+            />
+            <button className="button button--primary" type="submit" disabled={sending || !draft.trim()}>
+              <Send size={17} aria-hidden="true" /> Enviar
+            </button>
+            <small>Enter para enviar · Shift + Enter para una nueva línea</small>
+          </form>
+        </div>
       </div>
     </div>
   );
