@@ -63,12 +63,12 @@ export function CourseCreatePage() {
     <div className="content-narrow content-narrow--form course-create-page">
       <button className="text-back" type="button" onClick={() => sourceMode === "choose" ? navigate("/app") : setSourceMode("choose")}><ArrowLeft size={16} aria-hidden="true" /> Volver</button>
       <PageHeader title={sourceMode === "choose" ? "Crear curso" : sourceMode === "pdf" ? "Subir el programa" : "Pegar contenido"} description={sourceMode === "choose" ? "Organiza los objetivos y contenidos de un curso." : sourceMode === "pdf" ? "Selecciona el programa desde tu equipo." : "Pega el programa del curso para organizar unidades y objetivos."} />
-      <div className="stepper" aria-label="Paso 1 de 2">
-        <div className="stepper__item stepper__item--active"><span>1</span><strong>Curso</strong></div>
-        <div className="stepper__line" />
-        <div className="stepper__item"><span>2</span><strong>Revisión</strong></div>
-      </div>
       <form className="form-card course-create-card" onSubmit={submit} noValidate>
+        <div className="stepper" role="list" aria-label="Progreso de creación del curso">
+          <div className="stepper__item stepper__item--active" role="listitem" aria-current="step"><span aria-hidden="true">1</span><strong>Curso</strong></div>
+          <div className="stepper__line" aria-hidden="true" />
+          <div className="stepper__item" role="listitem"><span aria-hidden="true">2</span><strong>Revisión</strong></div>
+        </div>
         {error ? <div className="alert alert--error" role="alert"><ApiErrorMessage error={error} /></div> : null}
         <label className="field">
           <span>Nombre del curso</span>
