@@ -359,33 +359,33 @@ img { display: block; max-width: 100%; }
 .chat-welcome__icon { align-items: center; background: var(--soft); border-radius: 50%; color: var(--brand-ink); display: flex; height: 46px; justify-content: center; margin-bottom: 13px; width: 46px; }
 .chat-welcome h2 { font-size: 1.16rem; }
 .chat-welcome p { font-size: .82rem; max-width: 410px; }
-.chat-message { border-radius: 10px; flex: 0 0 auto; max-width: 88%; min-width: 0; padding: 11px 13px; }
+.chat-message { border-radius: 10px; flex: 0 0 auto; font-size: .94rem; line-height: 1.55; max-width: 88%; min-width: 0; padding: 11px 13px; }
 .chat-message--rubric { max-width: 100%; padding: 8px 0; width: 100%; }
 .chat-message--user { align-self: flex-end; background: var(--soft); color: var(--ink); }
 .chat-message--assistant { align-self: flex-start; background: transparent; border: 0; color: var(--ink); padding-left: 0; padding-right: 0; }
 .chat-message p:last-child { margin-bottom: 0; }
-.chat-message--user p { color: inherit; margin: 0; }
-.rubric-message-intro { font-size: .8rem; margin-bottom: 11px; }
-.markdown { font-size: .84rem; }
-.markdown p { margin-bottom: 9px; }
+.chat-message--user p { color: inherit; line-height: inherit; margin: 0; }
+.rubric-message-intro { color: var(--ink); font-size: .94rem; line-height: 1.55; margin-bottom: 14px; }
+.markdown { font-size: .94rem; line-height: 1.6; }
+.markdown p { line-height: inherit; margin-bottom: 11px; }
 .markdown p:last-child { margin-bottom: 0; }
 .markdown ul, .markdown ol { padding-left: 20px; }
-.markdown table { border-collapse: collapse; font-size: .7rem; max-width: 100%; table-layout: fixed; width: 100%; }
-.markdown th, .markdown td { border: 1px solid var(--line); overflow-wrap: anywhere; padding: 5px 7px; }
-.typing { align-items: center; color: var(--muted); display: flex; font-size: .82rem; gap: 8px; }
+.markdown table { border-collapse: collapse; font-size: .82rem; line-height: 1.5; max-width: 100%; table-layout: fixed; width: 100%; }
+.markdown th, .markdown td { border: 1px solid var(--line); overflow-wrap: anywhere; padding: 7px 9px; }
+.typing { align-items: center; color: var(--muted); display: flex; font-size: .9rem; gap: 8px; }
 .chat-hint { font-size: .73rem; margin: 8px 2px; }
 .chat-composer-dock { align-items: flex-end; bottom: 0; display: flex; justify-content: center; left: var(--app-sidebar-width); padding: 0 var(--main-content-gutter); pointer-events: none; position: fixed; right: 0; z-index: 18; }
 .chat-composer { background: var(--surface); border: 1px solid var(--line); border-bottom: 0; border-radius: 13px 13px 0 0; box-shadow: 0 -10px 30px color-mix(in srgb, var(--ink) 8%, transparent); display: grid; flex: 0 1 1110px; gap: 7px; grid-template-columns: minmax(0, 1fr) auto; margin: 0 auto; max-width: 1110px; padding: 10px 10px calc(10px + env(safe-area-inset-bottom, 0px)); pointer-events: auto; width: 100%; }
-.chat-composer textarea { background: transparent; border: 0; color: var(--ink); min-height: 59px; outline: 0; padding: 4px; resize: vertical; }
+.chat-composer textarea { background: transparent; border: 0; color: var(--ink); font-size: 1rem; line-height: 1.55; min-height: 59px; outline: 0; padding: 4px; resize: vertical; }
 .chat-composer .button { align-self: end; }
 .chat-composer small { grid-column: 1 / -1; padding: 0 4px; }
 .rubric-panel { align-self: start; max-height: calc(100vh - 114px); overflow-y: auto; position: sticky; top: 91px; }
 .rubric-panel__header { align-items: flex-start; border-bottom: 1px solid var(--line); display: flex; justify-content: space-between; padding-bottom: 15px; }
 .rubric-panel__header h2 { font-size: 1.2rem; margin-bottom: 0; }
 .rubric-panel__header > svg { color: var(--brand-ink); }
-.rubric-meta { font-size: .75rem; margin: 9px 0 15px; }
-.rubric-instructions, .rubric-suggestions { background: var(--surface-soft); border: 1px solid var(--line); border-radius: 8px; font-size: .79rem; margin-bottom: 12px; padding: 10px; }
-.rubric-instructions p { font-size: .78rem; margin: 5px 0 0; }
+.rubric-meta { font-size: .8rem; line-height: 1.5; margin: 9px 0 15px; }
+.rubric-instructions, .rubric-suggestions { background: var(--surface-soft); border: 1px solid var(--line); border-radius: 8px; font-size: .88rem; line-height: 1.55; margin-bottom: 12px; padding: 12px; }
+.rubric-instructions p { font-size: inherit; line-height: 1.55; margin: 5px 0 0; }
 .rubric-criteria { display: flex; flex-direction: column; gap: 10px; }
 .rubric-criterion { border-bottom: 1px solid var(--line); padding-bottom: 11px; }
 .rubric-criterion:last-child { border-bottom: 0; }
@@ -404,23 +404,24 @@ img { display: block; max-width: 100%; }
 .export-actions > span { color: var(--muted); font-size: .72rem; margin-right: auto; }
 .rubric-chat-card { background: transparent; border: 0; border-radius: 0; color: var(--ink); overflow: visible; padding: 0; }
 .rubric-chat-card__header { align-items: flex-start; border-bottom: 1px solid var(--line); display: flex; gap: 12px; justify-content: space-between; padding-bottom: 11px; }
-.rubric-chat-card__header h2 { font-size: 1.1rem; margin-bottom: 0; }
+.rubric-chat-card__header h2 { font-size: 1.15rem; margin-bottom: 0; }
 .rubric-chat-card__header > svg { color: var(--brand-ink); flex: 0 0 auto; margin-top: 3px; }
 .rubric-chat-card .rubric-meta { margin: 5px 0 0; }
 .rubric-chat-card .rubric-instructions, .rubric-chat-card .rubric-suggestions { background: transparent; border: 0; border-radius: 0; padding-left: 0; padding-right: 0; }
 .rubric-table-wrap { margin: 13px 0 14px; min-width: 0; width: 100%; }
-.rubric-table { border-collapse: collapse; font-size: .72rem; table-layout: fixed; width: 100%; }
-.rubric-table th, .rubric-table td { border: 0; border-bottom: 1px solid var(--line); min-width: 0; overflow-wrap: anywhere; padding: 8px 7px; text-align: left; vertical-align: top; }
-.rubric-table thead th { background: var(--soft); color: var(--brand-ink); font-size: .7rem; font-weight: 800; }
+.rubric-table { border-collapse: collapse; font-size: .84rem; line-height: 1.5; table-layout: fixed; width: 100%; }
+.rubric-table th, .rubric-table td { border: 0; border-bottom: 1px solid var(--line); min-width: 0; overflow-wrap: anywhere; padding: 10px 9px; text-align: left; vertical-align: top; }
+.rubric-table thead th { background: var(--soft); color: var(--brand-ink); font-size: .81rem; font-weight: 800; line-height: 1.4; }
 .rubric-table thead th:first-child { border-radius: 7px 0 0 7px; }
 .rubric-table thead th:last-child { border-radius: 0 7px 7px 0; }
 .rubric-table tbody tr:nth-child(even) { background: var(--surface); }
-.rubric-table tbody th { color: var(--ink); font-size: .72rem; font-weight: 700; }
-.rubric-table__criterion-description { color: var(--muted); display: block; font-size: .67rem; font-weight: 450; line-height: 1.45; margin-top: 4px; }
-.rubric-table tbody td { color: var(--muted); }
+.rubric-table tbody th { color: var(--ink); font-size: .89rem; font-weight: 700; line-height: 1.5; }
+.rubric-table__criterion-description { color: var(--muted); display: block; font-size: .82rem; font-weight: 450; line-height: 1.5; margin-top: 5px; }
+.rubric-table tbody td { color: var(--ink); line-height: 1.55; }
 .rubric-table tbody tr.rubric-table__score-row,
 .rubric-table tbody tr.rubric-table__score-row th,
-.rubric-table tbody tr.rubric-table__score-row td { background: var(--surface-soft); color: var(--brand-ink); font-size: .7rem; font-weight: 650; }
+.rubric-table tbody tr.rubric-table__score-row td { background: var(--surface-soft); color: var(--brand-ink); font-size: .8rem; font-weight: 650; line-height: 1.45; }
+.rubric-table tbody tr.rubric-table__score-row th { background: var(--surface-soft); color: var(--brand-ink); font-size: .8rem; font-weight: 650; line-height: 1.45; }
 .rubric-table tbody tr.rubric-table__score-row th { color: var(--brand-ink); text-align: right; }
 .rubric-table tbody tr.rubric-table__score-row td { text-align: center; }
 .rubric-table__mobile-score { display: none; }
@@ -611,6 +612,16 @@ img { display: block; max-width: 100%; }
   .auth-page { grid-template-columns: minmax(290px, .9fr) minmax(390px, 1.1fr); }
   .auth-aside { padding: 26px 30px; }
   .auth-panel { padding: 48px 30px; }
+  .rubric-table, .rubric-table tbody { display: block; }
+  .rubric-table colgroup, .rubric-table thead { display: none; }
+  .rubric-table tbody tr:not(.rubric-table__score-row) { background: var(--surface); border: 1px solid var(--line); border-radius: 9px; display: flex; flex-direction: column; margin-bottom: 12px; padding: 8px 11px; }
+  .rubric-table tbody tr:not(.rubric-table__score-row) > th,
+  .rubric-table tbody tr:not(.rubric-table__score-row) > td { border: 0; display: block; padding: 6px 0; width: 100%; }
+  .rubric-table tbody tr:not(.rubric-table__score-row) > th { color: var(--brand-ink); font-size: .9rem; }
+  .rubric-table tbody tr:not(.rubric-table__score-row) > td:nth-child(n + 2) { background: var(--surface-soft); border: 0; border-radius: 6px; margin: 4px 0; padding: 8px 10px; }
+  .rubric-table tbody tr:not(.rubric-table__score-row) > td:nth-child(n + 2)::before { color: var(--brand-ink); content: attr(data-level); display: block; font-size: .82rem; font-weight: 750; line-height: 1.4; margin-bottom: 4px; }
+  .rubric-table tbody tr.rubric-table__score-row { display: none; }
+  .rubric-table__mobile-score { color: var(--brand-ink); display: block; font-size: .78rem; font-weight: 700; line-height: 1.4; margin-top: 5px; }
 }
 
 @media (max-width: 640px) {
@@ -665,16 +676,6 @@ img { display: block; max-width: 100%; }
   .chat-composer textarea { min-width: 0; }
   .chat-composer .button { padding-left: 12px; padding-right: 12px; }
   .chat-composer small { grid-column: 1 / -1; }
-  .rubric-table, .rubric-table tbody { display: block; }
-  .rubric-table colgroup, .rubric-table thead { display: none; }
-  .rubric-table tbody tr:not(.rubric-table__score-row) { background: var(--surface); border: 1px solid var(--line); border-radius: 9px; display: flex; flex-direction: column; margin-bottom: 10px; padding: 6px 9px; }
-  .rubric-table tbody tr:not(.rubric-table__score-row) > th,
-  .rubric-table tbody tr:not(.rubric-table__score-row) > td { border: 0; display: block; padding: 5px 0; width: 100%; }
-  .rubric-table tbody tr:not(.rubric-table__score-row) > th { color: var(--brand-ink); font-size: .82rem; }
-  .rubric-table tbody tr:not(.rubric-table__score-row) > td:nth-child(n + 2) { background: var(--surface-soft); border: 0; border-radius: 6px; margin: 3px 0; padding: 7px 8px; }
-  .rubric-table tbody tr:not(.rubric-table__score-row) > td:nth-child(n + 2)::before { color: var(--brand-ink); content: attr(data-level); display: block; font-size: .69rem; font-weight: 750; margin-bottom: 2px; }
-  .rubric-table tbody tr.rubric-table__score-row { display: none; }
-  .rubric-table__mobile-score { color: var(--brand-ink); display: block; font-size: .67rem; font-weight: 700; margin-top: 4px; }
   .landing-header { flex-wrap: wrap; padding: 15px 16px; }
   .landing-brand img { height: 34px; width: 34px; }
   .landing-menu-button { align-items: center; background: var(--surface); border: 1px solid var(--line); border-radius: 8px; color: var(--ink); display: flex; height: 36px; justify-content: center; width: 36px; }
