@@ -19,7 +19,8 @@
   heredadas se muestran debajo del nombre del criterio; las rúbricas nuevas pueden omitirlas. El
   historial usa el scroll natural de la página, el compositor permanece fijo al borde inferior con
   espacio reservado para que no oculte el final, y solo se sigue una respuesta nueva si el usuario
-  estaba al final; cargar una conversación no fuerza el desplazamiento.
+  estaba al final; cargar una conversación no fuerza el desplazamiento. La tipografía de mensajes y
+  niveles se mantiene legible; la tabla pasa a tarjetas responsivas por debajo de 820 px.
 - `src/utils/rubric.ts` exporta Markdown, PDF y Excel en el navegador. Excel replica la matriz de
   `Rubrica esperada.pdf`: encabezado verde, criterios amarillos, filas de puntaje y conversión de
   puntaje a nota con exigencia del 60 %. Las exportaciones de rúbricas usan el criterio y sus niveles
