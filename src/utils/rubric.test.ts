@@ -1,8 +1,20 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { strFromU8, unzipSync } from "fflate";
 import * as XLSX from "xlsx-js-style";
 import type { RubricPayload } from "./rubric";
-import { createRubricExcelFile, createRubricExcelWorkbook, rubricToMarkdown } from "./rubric";
+import { createRubricExcelFile, createRubricExcelWorkbook, downloadRubricPdf, isRubricPayload, rubricToMarkdown } from "./rubric";
+
+const pdfMocks = vi.hoisted(() => ({ autoTable: vi.fn(), text: vi.fn(), save: vi.fn() }));
+
+vi.mock("jspdf", () => ({
+  jsPDF: class MockJsPdf {
+    setFontSize = vi.fn();
+    text = pdfMocks.text;
+    save = pdfMocks.save;
+  },
+}));
+
+vi.mock("jspdf-autotable", () => ({ default: pdfMocks.autoTable }));
 
 const achievementLevels = ["Inicial", "En desarrollo", "Logrado", "Sobresaliente"];
 const rubric: RubricPayload = {
@@ -33,6 +45,7 @@ describe("rubric exports", () => {
 
     expect(sheet["A1"].v).toBe("Contenido");
     expect(sheet["B1"].v).toBe("Rubrica General");
+    expect(sheet["A2"].v).toBe("Criterio 1");
     expect(sheet["A1"].s.fill.fgColor.rgb).toBe("B3E5A1");
     expect(sheet["A2"].s.fill.fgColor.rgb).toBe("FEE6A4");
     expect(sheet["A3"].v).toBe("Puntaje");
@@ -72,6 +85,60 @@ describe("rubric exports", () => {
   it("includes a score row for each criterion in Markdown", () => {
     const markdown = rubricToMarkdown(rubric, "Evaluación de prueba");
 
-    expect(markdown).toContain("| Puntaje |  | 0 | 1 | 2 | 3 |");
+    expect(markdown).toContain("| Criterio | Inicial | En desarrollo | Logrado | Sobresaliente |");
+    expect(markdown).toContain("| Criterio 1 — Descripción observable del criterio. | Requiere apoyo. | Muestra avances parciales. | Cumple lo esperado. | Supera lo esperado con claridad. |");
+    expect(markdown).toContain("| Puntaje | 0 | 1 | 2 | 3 |");
+    expect(markdown).not.toContain("Qué observar");
+  });
+
+  it("exports criteria without the legacy description field", async () => {
+    const currentRubric: RubricPayload = {
+      title: "Rúbrica actual",
+      criteria: [{ criterion: "Claridad", levels: { Inicial: "Poco claro", Logrado: "Claro" } }],
+    };
+    const markdown = rubricToMarkdown(currentRubric, "Evaluación actual");
+    const workbook = await createRubricExcelWorkbook(currentRubric, "Evaluación actual");
+
+    expect(markdown).toContain("| Claridad | Poco claro | Claro |");
+    expect(workbook.Sheets["Rúbrica"]["A2"].v).toBe("Claridad");
+    expect(workbook.Sheets["Rúbrica"]["B2"].v).toBe("Poco claro");
+  });
+
+  it("exports PDF with the same criterion and level columns as the chat", async () => {
+    pdfMocks.autoTable.mockClear();
+    await downloadRubricPdf(rubric, "Evaluación de prueba");
+
+    expect(pdfMocks.autoTable).toHaveBeenCalledWith(expect.anything(), expect.objectContaining({
+      head: [["Criterio", ...achievementLevels]],
+      body: expect.arrayContaining([
+        ["Criterio 1 — Descripción observable del criterio.", "Requiere apoyo.", "Muestra avances parciales.", "Cumple lo esperado.", "Supera lo esperado con claridad."],
+        ["Puntaje", 0, 1, 2, 3],
+      ]),
+    }));
+    expect(pdfMocks.save).toHaveBeenCalledWith("evaluacion-de-prueba.pdf");
+  });
+});
+
+describe("rubric payload compatibility", () => {
+  it("accepts legacy descriptions and criteria without descriptions", () => {
+    const currentCriterion = {
+      criterion: rubric.criteria[0].criterion,
+      levels: rubric.criteria[0].levels,
+      scores: rubric.criteria[0].scores,
+    };
+
+    expect(isRubricPayload(rubric)).toBe(true);
+    expect(isRubricPayload({ ...rubric, criteria: [currentCriterion] })).toBe(true);
+  });
+
+  it("rejects invalid criterion levels and non-object level collections", () => {
+    expect(isRubricPayload({
+      title: "Rúbrica inválida",
+      criteria: [{ criterion: "Criterio", levels: ["Inicial", "Logrado"] }],
+    })).toBe(false);
+    expect(isRubricPayload({
+      title: "Rúbrica inválida",
+      criteria: [{ criterion: "Criterio", levels: { Inicial: 0 } }],
+    })).toBe(false);
   });
 });
