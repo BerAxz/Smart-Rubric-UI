@@ -948,8 +948,12 @@ export interface components {
         RubricCriterion: {
             /** Criterion */
             criterion: string;
-            /** Description */
-            description: string;
+            /**
+             * Description
+             * @deprecated
+             * @description Optional legacy description retained for rubrics generated before descriptions moved into achievement-level descriptors.
+             */
+            description?: string | null;
             /** Levels */
             levels: {
                 [key: string]: string;
