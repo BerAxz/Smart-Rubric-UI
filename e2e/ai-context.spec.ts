@@ -50,7 +50,7 @@ test("uses the PDF task and keeps objectives as rubric alignment", async ({ page
     await Promise.all([evaluationCreated, createButton.click({ timeout: 10_000 }).catch(() => undefined)]);
     await expect(page).toHaveURL(/\/app\/evaluations\//);
 
-    await page.getByRole("link", { name: /Abrir chat/ }).click();
+    await page.getByRole("link", { name: /Continúa en el chat/ }).click();
     await page.getByRole("button", { name: /Generar primera versión/ }).click();
     await expect(
       page.getByRole("heading", { name: "Rúbrica: Presentación sobre energías renovables" }).first(),
